@@ -92,7 +92,7 @@ stopBtn.addEventListener("click", async () => {
 
 function frame() {
   const bands = audio.bands();
-  viz.render(bands, audio.rawFreq());
+  viz.render(bands, audio.rawFreq(), audio.beat());
   bassBar.style.width = `${Math.min(100, bands.bass * 100).toFixed(0)}%`;
   midBar.style.width = `${Math.min(100, bands.mid * 100).toFixed(0)}%`;
   trebleBar.style.width = `${Math.min(100, bands.treble * 100).toFixed(0)}%`;

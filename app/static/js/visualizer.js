@@ -18,20 +18,36 @@ const vertexShader = /* glsl */ `
   uniform float uBass;
   uniform float uMid;
   uniform float uTreble;
+  uniform float uBurst;
   uniform float uPixelRatio;
   attribute float aSize;
   attribute vec3 aSeed;
   varying float vRadial;
   varying float vBright;
 
+  // Pseudo-curl flow field: each axis is a cross-derivative of sin-noise,
+  // producing divergence-free-ish currents with no global drift.
+  vec3 flowField(vec3 p, float t) {
+    vec3 q = p * 0.035;
+    float dx = sin(q.y * 1.4 + t * 0.22 + q.z * 0.9) - sin(q.z * 1.1 + t * 0.18);
+    float dy = sin(q.z * 1.3 + t * 0.19 + q.x * 0.8) - sin(q.x * 1.2 + t * 0.23);
+    float dz = sin(q.x * 1.1 + t * 0.21 + q.y * 0.7) - sin(q.y * 1.3 + t * 0.17);
+    return vec3(dx, dy, dz);
+  }
+
   void main() {
     float r = length(position);
+
+    // Flow field displacement — scales up with mid energy
+    vec3 pos = position + flowField(position, uTime) * (2.0 + uMid * 2.5);
+
+    // Swirl rotation
     float angle = uTime * 0.04 + r * 0.012 + aSeed.x * 0.6;
     float c = cos(angle), s = sin(angle);
-    vec3 pos = vec3(
-      position.x * c - position.z * s,
-      position.y,
-      position.x * s + position.z * c
+    pos = vec3(
+      pos.x * c - pos.z * s,
+      pos.y,
+      pos.x * s + pos.z * c
     );
 
     float breathe = 1.0 + uBass * 0.82;
@@ -39,13 +55,16 @@ const vertexShader = /* glsl */ `
     pos.y += aSeed.y * uMid   * 6.5;
     pos   += aSeed   * uTreble * 1.8;
 
+    // Beat burst — uniform radial shockwave, decays externally each frame
+    pos += normalize(position) * uBurst * 18.0;
+
     vRadial = clamp(r / 60.0, 0.0, 1.0);
-    vBright = 0.55 + uBass * 1.05 + uTreble * 0.45;
+    vBright = 0.55 + uBass * 1.05 + uTreble * 0.45 + uBurst * 0.7;
 
     vec4 mv = modelViewMatrix * vec4(pos, 1.0);
     gl_Position = projectionMatrix * mv;
 
-    float size = aSize * (1.0 + uBass * 0.65);
+    float size = aSize * (1.0 + uBass * 0.65 + uBurst * 0.5);
     gl_PointSize = size * uPixelRatio * (220.0 / -mv.z);
   }
 `;
@@ -238,6 +257,7 @@ export class Visualizer {
         uBass:       { value: 0 },
         uMid:        { value: 0 },
         uTreble:     { value: 0 },
+        uBurst:      { value: 0 },
         uPixelRatio: { value: this.renderer.getPixelRatio() },
         uColorInner: { value: new THREE.Color().setHSL(BASE_INNER_H, 1.0, 0.55) },
         uColorOuter: { value: new THREE.Color().setHSL(BASE_OUTER_H, 1.0, 0.50) },
@@ -286,7 +306,7 @@ export class Visualizer {
 
   // ── Render ───────────────────────────────────────────────────────────────
 
-  render(bands, freqData) {
+  render(bands, freqData, beat) {
     const dt = this.clock.getDelta();
     const t  = this.clock.getElapsedTime();
     const u  = this.particles.material.uniforms;
@@ -295,6 +315,10 @@ export class Visualizer {
     u.uBass.value   = bands.bass;
     u.uMid.value    = bands.mid;
     u.uTreble.value = bands.treble;
+
+    // Beat burst: spike to 1.0 on onset, decay ~300ms
+    if (beat) u.uBurst.value = 1.0;
+    else u.uBurst.value *= 0.85;
 
     this._updateColors(bands, t);
     this._updateGrid(freqData);

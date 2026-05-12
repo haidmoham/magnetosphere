@@ -37,6 +37,8 @@ export class AudioEngine {
     this.freqData = null;
     this.label = "";
     this._smoothed = { bass: 0, mid: 0, treble: 0 };
+    this._bassEnv  = 0;   // slow envelope for onset detection
+    this._beat     = false;
   }
 
   _ensureContext() {
@@ -186,6 +188,13 @@ export class AudioEngine {
     s.bass = bass > s.bass ? bass : s.bass * 0.88 + bass * 0.12;
     s.mid = mid > s.mid ? mid : s.mid * 0.82 + mid * 0.18;
     s.treble = treble > s.treble ? treble : s.treble * 0.78 + treble * 0.22;
+
+    // Onset detection: beat fires when raw bass jumps >40% above slow envelope.
+    this._bassEnv = this._bassEnv * 0.92 + bass * 0.08;
+    this._beat = bass > this._bassEnv * 1.4 && bass > 0.2;
+
     return { bass: s.bass, mid: s.mid, treble: s.treble };
   }
+
+  beat() { return this._beat; }
 }
