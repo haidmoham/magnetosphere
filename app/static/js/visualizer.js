@@ -11,7 +11,7 @@ const GRID_ROWS      = 32;   // depth slices front→back
 const GRID_WIDTH     = 900;
 const GRID_DEPTH     = 380;
 const GRID_Z_CENTER  = -80;  // world-Z of grid midpoint
-const GRID_MAX_H     = 10;   // max vertex lift (units)
+const GRID_MAX_H     = 12;   // max vertex lift (units)
 
 const vertexShader = /* glsl */ `
   uniform float uTime;
