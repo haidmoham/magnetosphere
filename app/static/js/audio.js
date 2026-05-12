@@ -154,6 +154,11 @@ export class AudioEngine {
     return this.mode === "mic" || this.mode === "system";
   }
 
+  // Raw frequency array — call after bands() so freqData is fresh.
+  rawFreq() {
+    return this.freqData;
+  }
+
   // Returns smoothed energy in [0, 1] for three bands.
   // Bin width at 44.1kHz / fftSize=1024 ≈ 43Hz.
   //   bass:   bins  1–6    (~40–260 Hz)

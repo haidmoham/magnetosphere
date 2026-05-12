@@ -1,12 +1,16 @@
 import * as THREE from "three";
 
 const PARTICLE_COUNT = 60000;
-const COLOR_BG = 0x08001a;
+const COLOR_BG       = 0x08001a;
+const BASE_INNER_H   = 0.556; // ~200° cyan
+const BASE_OUTER_H   = 0.840; // ~302° hot-pink
 
-// Starting HSL values for silence — classic synthwave at rest.
-// Inner: cyan (200°), Outer: hot pink (302°)
-const BASE_INNER_H = 0.556; // ~200°
-const BASE_OUTER_H = 0.840; // ~302°
+// Frequency bar layout
+const BAR_COLS = 18;
+const BAR_ROWS = 3;
+const BAR_COUNT = BAR_COLS * BAR_ROWS;
+const BAR_Z_POSITIONS = [-45, -85, -130]; // recede toward horizon
+const BAR_MAX_HEIGHT  = 5.5;              // small — floor stays a floor
 
 const vertexShader = /* glsl */ `
   uniform float uTime;
@@ -29,18 +33,19 @@ const vertexShader = /* glsl */ `
       position.x * s + position.z * c
     );
 
-    float breathe = 1.0 + uBass * 0.55;
+    // More dramatic: deeper radial breathing and displacement
+    float breathe = 1.0 + uBass * 0.82;
     pos *= breathe;
-    pos.y += aSeed.y * uMid * 4.0;
-    pos += aSeed * uTreble * 0.9;
+    pos.y += aSeed.y * uMid  * 6.5;
+    pos   += aSeed   * uTreble * 1.8;
 
     vRadial = clamp(r / 60.0, 0.0, 1.0);
-    vBright = 0.6 + uBass * 0.8 + uTreble * 0.3;
+    vBright = 0.55 + uBass * 1.05 + uTreble * 0.45;
 
     vec4 mv = modelViewMatrix * vec4(pos, 1.0);
     gl_Position = projectionMatrix * mv;
 
-    float size = aSize * (1.0 + uBass * 0.5);
+    float size = aSize * (1.0 + uBass * 0.65);
     gl_PointSize = size * uPixelRatio * (220.0 / -mv.z);
   }
 `;
@@ -59,9 +64,8 @@ const fragmentShader = /* glsl */ `
     float core = pow(1.0 - d * 2.0, 3.0);
     float halo = pow(1.0 - d * 2.0, 1.2) * 0.35;
 
-    vec3 col = mix(uColorInner, uColorOuter, vRadial) * vBright;
+    vec3 col   = mix(uColorInner, uColorOuter, vRadial) * vBright;
     float alpha = core + halo;
-    // White-hot core: inner colour bleeds toward white on bright pixels.
     col += uColorInner * core * 0.5 * vBright;
 
     gl_FragColor = vec4(col, alpha);
@@ -93,22 +97,25 @@ export class Visualizer {
     this.camera.position.set(0, 12, 135);
     this.camera.lookAt(0, -6, 0);
 
-    // Pre-allocated Color instances — updated in place each frame (no GC pressure).
+    // Pre-allocated colours — updated in-place each frame, zero GC.
     this._cInner = new THREE.Color();
     this._cOuter = new THREE.Color();
     this._cGrid  = new THREE.Color();
     this._cFog   = new THREE.Color();
+    this._cTmp   = new THREE.Color(); // scratch for bar lerp
 
     this._buildGrid();
     this._buildParticles();
+    this._buildFreqBars();
     this.clock = new THREE.Clock();
 
     window.addEventListener("resize", () => this._onResize());
   }
 
+  // ── Grid ────────────────────────────────────────────────────────────────
+
   _buildGrid() {
     const grid = new THREE.GridHelper(900, 60);
-    // Replace vertex-colour material so we can update colour per frame.
     grid.material = new THREE.LineBasicMaterial({
       color: 0x00f0ff,
       transparent: true,
@@ -120,8 +127,57 @@ export class Visualizer {
     this.scene.add(grid);
   }
 
+  // ── Frequency peak bars ──────────────────────────────────────────────────
+  // Small instanced columns distributed across the floor.
+  // Each maps to a log-spaced frequency bin so every range of the spectrum
+  // drives a distinct region of the floor.
+
+  _buildFreqBars() {
+    // Unit box with pivot at base (not centre) so it scales upward.
+    const geo = new THREE.BoxGeometry(0.5, 1, 0.5);
+    geo.translate(0, 0.5, 0);
+
+    const mat = new THREE.MeshBasicMaterial({
+      vertexColors: true,
+      transparent: true,
+      opacity: 0.9,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+    });
+
+    const mesh = new THREE.InstancedMesh(geo, mat, BAR_COUNT);
+    mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+
+    const dummy = new THREE.Object3D();
+    this._barPositions = [];
+
+    for (let i = 0; i < BAR_COUNT; i++) {
+      const col = i % BAR_COLS;
+      const row = Math.floor(i / BAR_COLS);
+      const x   = (col / (BAR_COLS - 1) - 0.5) * 130;
+      const z   = BAR_Z_POSITIONS[row];
+
+      dummy.position.set(x, -48, z);
+      dummy.scale.set(1, 0.05, 1);
+      dummy.updateMatrix();
+      mesh.setMatrixAt(i, dummy.matrix);
+      mesh.setColorAt(i, new THREE.Color(0x00f0ff));
+      this._barPositions.push({ x, z });
+    }
+
+    mesh.instanceMatrix.needsUpdate = true;
+    mesh.instanceColor.needsUpdate  = true;
+
+    this._barMesh    = mesh;
+    this._barHeights = new Float32Array(BAR_COUNT).fill(0.05);
+    this._barDummy   = dummy;
+    this.scene.add(mesh);
+  }
+
+  // ── Particles ────────────────────────────────────────────────────────────
+
   _buildParticles() {
-    const geo = new THREE.BufferGeometry();
+    const geo       = new THREE.BufferGeometry();
     const positions = new Float32Array(PARTICLE_COUNT * 3);
     const sizes     = new Float32Array(PARTICLE_COUNT);
     const seeds     = new Float32Array(PARTICLE_COUNT * 3);
@@ -133,13 +189,12 @@ export class Visualizer {
       const phi    = Math.acos(2 * Math.random() - 1);
       const sinPhi = Math.sin(phi);
 
-      positions[i * 3 + 0] = radius * sinPhi * Math.cos(theta);
+      positions[i * 3]     = radius * sinPhi * Math.cos(theta);
       positions[i * 3 + 1] = radius * Math.cos(phi);
       positions[i * 3 + 2] = radius * sinPhi * Math.sin(theta);
 
-      sizes[i] = 0.8 + Math.random() * 2.4;
-
-      seeds[i * 3 + 0] = (Math.random() - 0.5) * 2;
+      sizes[i]         = 0.8 + Math.random() * 2.4;
+      seeds[i * 3]     = (Math.random() - 0.5) * 2;
       seeds[i * 3 + 1] = (Math.random() - 0.5) * 2;
       seeds[i * 3 + 2] = (Math.random() - 0.5) * 2;
     }
@@ -169,38 +224,70 @@ export class Visualizer {
     this.scene.add(this.particles);
   }
 
-  // Derive all scene colours from the current FFT bands and elapsed time.
-  // All writes go through .copy() / .setHSL() — no allocations.
+  // ── Colour update ────────────────────────────────────────────────────────
+
   _updateColors(bands, t) {
-    // Slow autonomous hue cycle — one full rotation every ~70 s.
     const cycle = (t * 0.014) % 1.0;
 
-    // Inner core: starts cyan, treble desaturates it toward white-hot.
     const iH = (BASE_INNER_H + cycle - bands.treble * 0.06 + 1.0) % 1.0;
-    const iS = 1.0 - bands.treble * 0.45;   // high treble → near-white core
-    const iL = 0.50 + bands.treble * 0.38;  // treble brightens the core
+    const iS = 1.0 - bands.treble * 0.45;
+    const iL = 0.50 + bands.treble * 0.45;
 
-    // Outer shell: starts hot-pink, bass pushes it toward red/orange.
     const oH = (BASE_OUTER_H + cycle + bands.bass * 0.18) % 1.0;
     const oS = 1.0;
-    const oL = 0.45 + bands.bass * 0.32;    // bass makes the halo flare
+    const oL = 0.45 + bands.bass * 0.42;
 
     this._cInner.setHSL(iH, iS, iL);
     this._cOuter.setHSL(oH, oS, oL);
-
-    // Grid tracks the inner (cool) hue so it stays cyan-adjacent.
-    // Brightness pulses gently with bass.
-    this._cGrid.setHSL(iH, 1.0, 0.45 + bands.bass * 0.22);
-
-    // Fog: dark, desaturated outer hue — particles fade into a warm haze on bass hits.
+    this._cGrid.setHSL(iH, 1.0, 0.40 + bands.bass * 0.25);
     this._cFog.setHSL(oH, 0.75, 0.06 + bands.bass * 0.05);
 
-    // Push to GPU uniforms and scene objects.
     this.particles.material.uniforms.uColorInner.value.copy(this._cInner);
     this.particles.material.uniforms.uColorOuter.value.copy(this._cOuter);
     this.grid.material.color.copy(this._cGrid);
     this.scene.fog.color.copy(this._cFog);
   }
+
+  // ── Frequency bar update ─────────────────────────────────────────────────
+
+  _updateFreqBars(freqData) {
+    if (!freqData) return;
+
+    const dummy = this._barDummy;
+
+    for (let i = 0; i < BAR_COUNT; i++) {
+      // Log-spaced bin sampling: maps i=0 → low freq, i=BAR_COUNT-1 → high.
+      const t      = i / (BAR_COUNT - 1);
+      const binIdx = Math.max(1, Math.round(Math.pow(220, t)));
+      const raw    = (freqData[binIdx] || 0) / 255;
+
+      // Asymmetric smoothing: snap up on attack, slow decay.
+      const target = raw * BAR_MAX_HEIGHT;
+      this._barHeights[i] = target > this._barHeights[i]
+        ? target
+        : this._barHeights[i] * 0.80 + target * 0.20;
+
+      const h   = Math.max(0.03, this._barHeights[i]);
+      const pos = this._barPositions[i];
+
+      dummy.position.set(pos.x, -48, pos.z);
+      dummy.scale.set(0.55, h, 0.55);
+      dummy.updateMatrix();
+      this._barMesh.setMatrixAt(i, dummy.matrix);
+
+      // Colour: interpolate inner→outer across the frequency range.
+      this._cTmp.lerpColors(this._cInner, this._cOuter, t);
+      // Brighten taller bars so hot peaks burn white.
+      const boost = 1.0 + (h / BAR_MAX_HEIGHT) * 1.2;
+      this._cTmp.multiplyScalar(boost);
+      this._barMesh.setColorAt(i, this._cTmp);
+    }
+
+    this._barMesh.instanceMatrix.needsUpdate = true;
+    this._barMesh.instanceColor.needsUpdate  = true;
+  }
+
+  // ── Resize ───────────────────────────────────────────────────────────────
 
   _onResize() {
     const w = window.innerWidth;
@@ -211,7 +298,9 @@ export class Visualizer {
     this.particles.material.uniforms.uPixelRatio.value = this.renderer.getPixelRatio();
   }
 
-  render(bands) {
+  // ── Main render loop ─────────────────────────────────────────────────────
+
+  render(bands, freqData) {
     const dt = this.clock.getDelta();
     const t  = this.clock.getElapsedTime();
     const u  = this.particles.material.uniforms;
@@ -222,14 +311,18 @@ export class Visualizer {
     u.uTreble.value = bands.treble;
 
     this._updateColors(bands, t);
+    this._updateFreqBars(freqData);
 
-    this.particles.rotation.y += dt * (0.05 + bands.bass * 0.25);
-    this.particles.rotation.x += dt * 0.015;
+    // More dramatic rotation — bass hits kick the spin noticeably.
+    this.particles.rotation.y += dt * (0.06 + bands.bass * 0.46);
+    this.particles.rotation.x += dt * 0.018;
 
-    this.grid.position.z = (this.grid.position.z + dt * (4 + bands.bass * 14)) % 15;
+    // Grid scrolls faster on bass hits.
+    this.grid.position.z = (this.grid.position.z + dt * (5 + bands.bass * 24)) % 15;
 
-    this.camera.position.x = Math.sin(t * 0.08) * 7;
-    this.camera.position.y = 12 + Math.cos(t * 0.06) * 2;
+    // Wider camera drift so the view feels alive.
+    this.camera.position.x = Math.sin(t * 0.08) * 13;
+    this.camera.position.y = 12 + Math.cos(t * 0.06) * 2.5;
     this.camera.lookAt(0, -6, 0);
 
     this.renderer.render(this.scene, this.camera);
