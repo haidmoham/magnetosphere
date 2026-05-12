@@ -131,52 +131,76 @@ export class Visualizer {
       for (let row = 0; row < GRID_ROWS - 1; row++)
         idxs.push(row * GRID_COLS + col, (row + 1) * GRID_COLS + col);
 
+    // Colour buffer — dark violet at rest, driven to magenta/cyan/white on peaks.
+    const colArr  = new Float32Array(vertCount * 3);
+    for (let i = 0; i < vertCount; i++) {
+      colArr[i * 3]     = 0.06;
+      colArr[i * 3 + 1] = 0.02;
+      colArr[i * 3 + 2] = 0.18;
+    }
+
     const geo = new THREE.BufferGeometry();
     const posAttr = new THREE.BufferAttribute(posArr, 3);
     posAttr.setUsage(THREE.DynamicDrawUsage);
+    const colAttr = new THREE.BufferAttribute(colArr, 3);
+    colAttr.setUsage(THREE.DynamicDrawUsage);
     geo.setAttribute("position", posAttr);
+    geo.setAttribute("color",    colAttr);
     geo.setIndex(idxs);
 
     const mat = new THREE.LineBasicMaterial({
-      color: 0x00f0ff,
+      vertexColors: true,
       transparent: true,
-      opacity: 0.55,
+      opacity: 0.85,
       fog: true,
     });
 
     const mesh = new THREE.LineSegments(geo, mat);
     mesh.position.y = -48;
-    this.grid        = mesh;
-    this._gridColH   = new Float32Array(GRID_COLS).fill(0); // per-column smoothed heights
+    this.grid            = mesh;
+    this._gridColH       = new Float32Array(GRID_COLS).fill(0);
     this._gridRowSpacing = rowSpacing;
     this.scene.add(mesh);
   }
 
   _updateGrid(freqData) {
     const pos = this.grid.geometry.attributes.position;
+    const col = this.grid.geometry.attributes.color;
 
     if (freqData) {
-      for (let col = 0; col < GRID_COLS; col++) {
-        // Log-spaced bin: col 0 = bass, col GRID_COLS-1 = treble
-        const t      = col / (GRID_COLS - 1);
+      for (let c = 0; c < GRID_COLS; c++) {
+        const t      = c / (GRID_COLS - 1);          // 0=bass … 1=treble
         const binIdx = Math.max(1, Math.round(Math.pow(220, t)));
         const raw    = (freqData[binIdx] || 0) / 255;
         const target = raw * GRID_MAX_H;
 
-        // Asymmetric smoothing: fast attack, slow decay
         const h = this._gridColH;
-        h[col] = target > h[col] ? target : h[col] * 0.80 + target * 0.20;
+        h[c] = target > h[c] ? target : h[c] * 0.80 + target * 0.20;
 
-        for (let row = 0; row < GRID_ROWS; row++) {
-          // Front rows (high index, closer to camera) get full deformation;
-          // back rows taper down so peaks appear to rise toward the viewer.
-          const rowFade = row / (GRID_ROWS - 1);
-          pos.setY(row * GRID_COLS + col, h[col] * (0.15 + 0.85 * rowFade));
+        // Peak colour: magenta at bass end, cyan at treble end.
+        const pr = 1.00 - t * 1.00;  // R: 1→0
+        const pg = 0.24 + t * 0.70;  // G: 0.24→0.94
+        const pb = 0.94 + t * 0.06;  // B: 0.94→1.00
+
+        for (let r = 0; r < GRID_ROWS; r++) {
+          const rowFade = r / (GRID_ROWS - 1);
+          const vertH   = h[c] * (0.15 + 0.85 * rowFade);
+          pos.setY(r * GRID_COLS + c, vertH);
+
+          // Normalised height drives colour from base → peak → white-hot.
+          const nH      = vertH / GRID_MAX_H;
+          const white   = Math.pow(nH, 2.5);           // only extreme peaks bleach
+          const fr = 0.06 + (pr + (1.0 - pr) * white - 0.06) * nH;
+          const fg = 0.02 + (pg + (1.0 - pg) * white - 0.02) * nH;
+          const fb = 0.18 + (pb + (1.0 - pb) * white - 0.18) * nH;
+
+          col.setXYZ(r * GRID_COLS + c, fr, fg, fb);
         }
       }
     }
 
     pos.needsUpdate = true;
+    col.needsUpdate = true;
   }
 
   // ── Particles ────────────────────────────────────────────────────────────
@@ -243,12 +267,10 @@ export class Visualizer {
 
     this._cInner.setHSL(iH, iS, iL);
     this._cOuter.setHSL(oH, 1.0, oL);
-    this._cGrid.setHSL(iH, 1.0, 0.40 + bands.bass * 0.25);
     this._cFog.setHSL(oH, 0.75, 0.06 + bands.bass * 0.05);
 
     this.particles.material.uniforms.uColorInner.value.copy(this._cInner);
     this.particles.material.uniforms.uColorOuter.value.copy(this._cOuter);
-    this.grid.material.color.copy(this._cGrid);
     this.scene.fog.color.copy(this._cFog);
   }
 
