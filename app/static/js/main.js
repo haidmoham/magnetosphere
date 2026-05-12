@@ -11,6 +11,8 @@ const bassBar = document.getElementById("bass-bar");
 const midBar = document.getElementById("mid-bar");
 const trebleBar = document.getElementById("treble-bar");
 const errorToast = document.getElementById("error-toast");
+const mobileNotice = document.getElementById("mobile-notice");
+const mobileDismiss = document.getElementById("mobile-dismiss");
 const castBtn     = document.getElementById("cast-btn");
 const castTooltip = document.getElementById("cast-tooltip");
 const helpBtn     = document.getElementById("help-btn");
@@ -96,6 +98,8 @@ function frame() {
   trebleBar.style.width = `${Math.min(100, bands.treble * 100).toFixed(0)}%`;
   requestAnimationFrame(frame);
 }
+
+mobileDismiss.addEventListener("click", () => { mobileNotice.hidden = true; });
 
 helpBtn.addEventListener("click", (e) => {
   e.stopPropagation();
