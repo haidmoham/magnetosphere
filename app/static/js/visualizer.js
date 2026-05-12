@@ -61,7 +61,7 @@ const vertexShader = /* glsl */ `
     pos += normalize(position) * (uBurst * 28.0 + uEcho * 18.0);
 
     // Scatter — each particle flies to its own random chaos position, then reforms
-    vec3 scatterTarget = aSeed * 95.0;
+    vec3 scatterTarget = aSeed * 50.0;
     pos = mix(pos, scatterTarget, uScatter);
 
     vRadial = clamp(r / 60.0, 0.0, 1.0);
@@ -324,8 +324,9 @@ export class Visualizer {
     u.uMid.value    = bands.mid;
     u.uTreble.value = bands.treble;
 
-    // Beat burst: fast radial punch, echo 200ms later, scatter: slow reform (~2.5s)
-    if (beat) {
+    // Beat burst: fast radial punch, echo 200ms later, scatter: reform ~1.5s
+    // Cooldown: don't re-trigger while still reforming from last beat
+    if (beat && u.uScatter.value < 0.15) {
       u.uBurst.value   = 1.0;
       u.uScatter.value = 1.0;
       clearTimeout(this._echoTimer);
@@ -333,7 +334,7 @@ export class Visualizer {
     }
     u.uBurst.value   *= 0.82;
     u.uEcho.value    *= 0.82;
-    u.uScatter.value *= 0.965;
+    u.uScatter.value *= 0.945;
 
     this._updateColors(bands, t);
     this._updateGrid(freqData);
