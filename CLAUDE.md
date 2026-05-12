@@ -40,7 +40,7 @@ No bundler, no npm — everything is served as-is.
 ## Project Structure
 
 ```
-magnetosphere/
+voidpulse/
 ├── app/
 │   ├── __init__.py           # Flask app factory
 │   ├── routes.py             # /, /health

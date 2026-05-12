@@ -1,4 +1,4 @@
-# Magnetosphere
+# Voidpulse
 
 A web reimagining of the iTunes Magnetosphere visualizer: a GPU particle field that swirls, breathes, and reacts to live audio.
 
