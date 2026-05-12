@@ -89,13 +89,13 @@ export class Visualizer {
     this.scene.fog = new THREE.FogExp2(COLOR_FOG.getHex(), 0.0055);
 
     this.camera = new THREE.PerspectiveCamera(
-      55,
+      62,
       window.innerWidth / window.innerHeight,
       0.1,
       600,
     );
-    this.camera.position.set(0, 8, 90);
-    this.camera.lookAt(0, -4, 0);
+    this.camera.position.set(0, 12, 135);
+    this.camera.lookAt(0, -6, 0);
 
     this._buildGrid();
     this._buildParticles();
@@ -189,9 +189,9 @@ export class Visualizer {
     this.grid.position.z = (this.grid.position.z + dt * (4 + bands.bass * 14)) % 15;
 
     // Subtle camera drift, with a downward tilt so the horizon stays in frame.
-    this.camera.position.x = Math.sin(t * 0.08) * 6;
-    this.camera.position.y = 8 + Math.cos(t * 0.06) * 2;
-    this.camera.lookAt(0, -4, 0);
+    this.camera.position.x = Math.sin(t * 0.08) * 7;
+    this.camera.position.y = 12 + Math.cos(t * 0.06) * 2;
+    this.camera.lookAt(0, -6, 0);
 
     this.renderer.render(this.scene, this.camera);
   }

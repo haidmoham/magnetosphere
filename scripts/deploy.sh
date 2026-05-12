@@ -1,10 +1,13 @@
 #!/bin/bash
-# Commit everything and push to trigger Railway deploy
+# Commit, push to GitHub, and deploy to Railway.
 # Usage: ./scripts/deploy.sh "commit message"
+# Note: once GitHub auto-deploy is connected in Railway dashboard
+#       (Service → Settings → Source → Connect Repo), `railway up` can be dropped.
 MSG="${1:-deploy}"
 git add -A
 git commit -m "$MSG"
 git push
-echo "Pushed — watching logs..."
+railway up --detach
+echo "Deploy triggered — watching logs..."
 sleep 8
-railway logs --lines 20
+railway logs --lines 25
