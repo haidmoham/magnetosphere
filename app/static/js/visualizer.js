@@ -137,8 +137,10 @@ export class Visualizer {
     const geo = new THREE.BoxGeometry(0.5, 1, 0.5);
     geo.translate(0, 0.5, 0);
 
+    // color:white so instanceColor values are applied directly (not multiplied by a tint).
+    // vertexColors must be false — BoxGeometry has no color attribute and it breaks instancing.
     const mat = new THREE.MeshBasicMaterial({
-      vertexColors: true,
+      color: 0xffffff,
       transparent: true,
       opacity: 0.9,
       blending: THREE.AdditiveBlending,
@@ -267,7 +269,7 @@ export class Visualizer {
         ? target
         : this._barHeights[i] * 0.80 + target * 0.20;
 
-      const h   = Math.max(0.03, this._barHeights[i]);
+      const h   = Math.max(0.35, this._barHeights[i]);
       const pos = this._barPositions[i];
 
       dummy.position.set(pos.x, -48, pos.z);
