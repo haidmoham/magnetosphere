@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Magnetosphere</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Share+Tech+Mono&display=swap" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.160.0/build/three.module.js"
+      }
+    }
+  </script>
+</head>
+<body>
+  <canvas id="stage"></canvas>
+
+  <div id="hud">
+    <div id="title">magnetosphere <span class="version">v{{ version }}</span></div>
+
+    <div id="source-picker">
+      <button class="src-btn" data-src="system">
+        <span class="dot"></span>
+        <span class="label">tab audio</span>
+        <span class="hint">share a Chrome tab with audio</span>
+      </button>
+      <button class="src-btn" data-src="mic">
+        <span class="dot"></span>
+        <span class="label">microphone</span>
+        <span class="hint">listen through the mic</span>
+      </button>
+      <label class="src-btn file-btn">
+        <input type="file" id="file-input" accept="audio/*" hidden />
+        <span class="dot"></span>
+        <span class="label">audio file</span>
+        <span class="hint">fallback — pick an mp3</span>
+      </label>
+    </div>
+
+    <div id="status-bar">
+      <div id="source-label">no source</div>
+      <button id="play-btn" hidden>play</button>
+      <button id="stop-btn" hidden>stop</button>
+    </div>
+
+    <div id="meters">
+      <div class="meter"><span>bass</span><div class="bar"><div id="bass-bar"></div></div></div>
+      <div class="meter"><span>mid</span><div class="bar"><div id="mid-bar"></div></div></div>
+      <div class="meter"><span>treble</span><div class="bar"><div id="treble-bar"></div></div></div>
+    </div>
+
+    <div id="error-toast" hidden></div>
+  </div>
+
+  <script type="module" src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>
