@@ -267,6 +267,80 @@ body::after {
 }
 
 /* ─── error toast ────────────────────────────────────────────── */
+/* ─── cast button + tooltip ──────────────────────────────────── */
+#cast-btn {
+  position: fixed;
+  bottom: 20px;
+  left: 20px;
+  cursor: pointer;
+  border: 1px solid rgba(0, 240, 255, 0.35);
+  border-radius: 2px;
+  background: rgba(10, 0, 30, 0.7);
+  color: var(--neon-cyan);
+  font-family: "Orbitron", monospace;
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  text-shadow: 0 0 6px rgba(0, 240, 255, 0.6);
+  padding: 6px 12px;
+  backdrop-filter: blur(6px);
+  transition: background 140ms ease, box-shadow 140ms ease;
+}
+#cast-btn:hover {
+  background: rgba(0, 240, 255, 0.1);
+  box-shadow: 0 0 16px rgba(0, 240, 255, 0.35);
+}
+
+#cast-tooltip {
+  position: fixed;
+  bottom: 56px;
+  left: 20px;
+  width: 280px;
+  background: rgba(8, 0, 26, 0.92);
+  border: 1px solid rgba(0, 240, 255, 0.4);
+  border-radius: 4px;
+  padding: 14px 16px;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 0 28px rgba(0, 240, 255, 0.2);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  z-index: 20;
+}
+
+.cast-row {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.cast-icon {
+  font-size: 18px;
+  color: var(--neon-cyan);
+  text-shadow: 0 0 8px var(--neon-cyan);
+  line-height: 1.2;
+  flex-shrink: 0;
+}
+
+.cast-title {
+  font-family: "Orbitron", monospace;
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--neon-cyan);
+  margin-bottom: 4px;
+}
+
+.cast-body {
+  font-family: "Share Tech Mono", monospace;
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  color: var(--text-dim);
+  line-height: 1.5;
+}
+
 #error-toast {
   position: fixed;
   top: 24px;

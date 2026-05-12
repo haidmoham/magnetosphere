@@ -54,6 +54,24 @@
     </div>
 
     <div id="error-toast" hidden></div>
+
+    <button id="cast-btn" aria-label="How to cast">⬡ cast</button>
+    <div id="cast-tooltip" hidden>
+      <div class="cast-row">
+        <span class="cast-icon">⬡</span>
+        <div>
+          <div class="cast-title">Chromecast / Google TV</div>
+          <div class="cast-body">Chrome menu → Cast → Cast tab → pick device</div>
+        </div>
+      </div>
+      <div class="cast-row">
+        <span class="cast-icon">⌘</span>
+        <div>
+          <div class="cast-title">AirPlay (Apple TV)</div>
+          <div class="cast-body">Menu bar AirPlay icon → select display<br>or Safari → Window → Use AirPlay Display</div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <script type="module" src="{{ url_for('static', filename='js/main.js') }}"></script>

@@ -11,6 +11,8 @@ const bassBar = document.getElementById("bass-bar");
 const midBar = document.getElementById("mid-bar");
 const trebleBar = document.getElementById("treble-bar");
 const errorToast = document.getElementById("error-toast");
+const castBtn     = document.getElementById("cast-btn");
+const castTooltip = document.getElementById("cast-tooltip");
 
 const audio = new AudioEngine();
 const viz = new Visualizer(canvas);
@@ -92,6 +94,12 @@ function frame() {
   trebleBar.style.width = `${Math.min(100, bands.treble * 100).toFixed(0)}%`;
   requestAnimationFrame(frame);
 }
+
+castBtn.addEventListener("click", (e) => {
+  e.stopPropagation();
+  castTooltip.hidden = !castTooltip.hidden;
+});
+document.addEventListener("click", () => { castTooltip.hidden = true; });
 
 refreshUi();
 requestAnimationFrame(frame);
