@@ -19,6 +19,7 @@ const vertexShader = /* glsl */ `
   uniform float uMid;
   uniform float uTreble;
   uniform float uBurst;
+  uniform float uScatter;
   uniform float uPixelRatio;
   attribute float aSize;
   attribute vec3 aSeed;
@@ -55,16 +56,20 @@ const vertexShader = /* glsl */ `
     pos.y += aSeed.y * uMid   * 6.5;
     pos   += aSeed   * uTreble * 1.8;
 
-    // Beat burst — uniform radial shockwave, decays externally each frame
-    pos += normalize(position) * uBurst * 18.0;
+    // Beat burst — uniform radial shockwave
+    pos += normalize(position) * uBurst * 28.0;
+
+    // Scatter — each particle flies to its own random chaos position, then reforms
+    vec3 scatterTarget = aSeed * 95.0;
+    pos = mix(pos, scatterTarget, uScatter);
 
     vRadial = clamp(r / 60.0, 0.0, 1.0);
-    vBright = 0.55 + uBass * 1.05 + uTreble * 0.45 + uBurst * 0.7;
+    vBright = 0.55 + uBass * 1.05 + uTreble * 0.45 + uBurst * 1.1 + uScatter * 0.6;
 
     vec4 mv = modelViewMatrix * vec4(pos, 1.0);
     gl_Position = projectionMatrix * mv;
 
-    float size = aSize * (1.0 + uBass * 0.65 + uBurst * 0.5);
+    float size = aSize * (1.0 + uBass * 0.65 + uBurst * 0.8 + uScatter * 0.4);
     gl_PointSize = size * uPixelRatio * (220.0 / -mv.z);
   }
 `;
@@ -258,6 +263,7 @@ export class Visualizer {
         uMid:        { value: 0 },
         uTreble:     { value: 0 },
         uBurst:      { value: 0 },
+        uScatter:    { value: 0 },
         uPixelRatio: { value: this.renderer.getPixelRatio() },
         uColorInner: { value: new THREE.Color().setHSL(BASE_INNER_H, 1.0, 0.55) },
         uColorOuter: { value: new THREE.Color().setHSL(BASE_OUTER_H, 1.0, 0.50) },
@@ -316,9 +322,13 @@ export class Visualizer {
     u.uMid.value    = bands.mid;
     u.uTreble.value = bands.treble;
 
-    // Beat burst: spike to 1.0 on onset, decay ~300ms
-    if (beat) u.uBurst.value = 1.0;
-    else u.uBurst.value *= 0.85;
+    // Beat burst: fast radial punch (~300ms), scatter: slow reform (~2.5s)
+    if (beat) {
+      u.uBurst.value   = 1.0;
+      u.uScatter.value = 1.0;
+    }
+    u.uBurst.value   *= 0.82;
+    u.uScatter.value *= 0.965;
 
     this._updateColors(bands, t);
     this._updateGrid(freqData);

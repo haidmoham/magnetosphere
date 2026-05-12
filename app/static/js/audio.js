@@ -190,8 +190,8 @@ export class AudioEngine {
     s.treble = treble > s.treble ? treble : s.treble * 0.78 + treble * 0.22;
 
     // Onset detection: beat fires when raw bass jumps >40% above slow envelope.
-    this._bassEnv = this._bassEnv * 0.92 + bass * 0.08;
-    this._beat = bass > this._bassEnv * 1.2 && bass > 0.12;
+    this._bassEnv = this._bassEnv * 0.88 + bass * 0.12;
+    this._beat = bass > this._bassEnv * 1.08 && bass > 0.06;
 
     return { bass: s.bass, mid: s.mid, treble: s.treble };
   }
