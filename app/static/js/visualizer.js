@@ -9,8 +9,11 @@ const BASE_OUTER_H   = 0.840; // ~302° hot-pink
 const BAR_COLS = 18;
 const BAR_ROWS = 3;
 const BAR_COUNT = BAR_COLS * BAR_ROWS;
-const BAR_Z_POSITIONS = [-45, -85, -130]; // recede toward horizon
-const BAR_MAX_HEIGHT  = 5.5;              // small — floor stays a floor
+// Closer rows so bars are legible from the camera's shallow viewing angle.
+// At Z=-10, distance ~157 units; a 12-unit bar subtends ~4° — clearly visible.
+const BAR_Z_POSITIONS = [-10, -48, -90];
+const BAR_MAX_HEIGHT  = 12;
+const BAR_MIN_HEIGHT  = 1.0;
 
 const vertexShader = /* glsl */ `
   uniform float uTime;
@@ -160,7 +163,7 @@ export class Visualizer {
       const z   = BAR_Z_POSITIONS[row];
 
       dummy.position.set(x, -48, z);
-      dummy.scale.set(1, 0.05, 1);
+      dummy.scale.set(1, BAR_MIN_HEIGHT, 1);
       dummy.updateMatrix();
       mesh.setMatrixAt(i, dummy.matrix);
       mesh.setColorAt(i, new THREE.Color(0x00f0ff));
@@ -171,7 +174,7 @@ export class Visualizer {
     mesh.instanceColor.needsUpdate  = true;
 
     this._barMesh    = mesh;
-    this._barHeights = new Float32Array(BAR_COUNT).fill(0.05);
+    this._barHeights = new Float32Array(BAR_COUNT).fill(BAR_MIN_HEIGHT);
     this._barDummy   = dummy;
     this.scene.add(mesh);
   }
@@ -269,11 +272,11 @@ export class Visualizer {
         ? target
         : this._barHeights[i] * 0.80 + target * 0.20;
 
-      const h   = Math.max(0.35, this._barHeights[i]);
+      const h   = Math.max(BAR_MIN_HEIGHT, this._barHeights[i]);
       const pos = this._barPositions[i];
 
       dummy.position.set(pos.x, -48, pos.z);
-      dummy.scale.set(0.55, h, 0.55);
+      dummy.scale.set(0.6, h, 0.6);
       dummy.updateMatrix();
       this._barMesh.setMatrixAt(i, dummy.matrix);
 
