@@ -32,7 +32,9 @@ const cursorRing = document.getElementById("cursor-ring");
 let _cursorBeatTimer = 0;
 
 // ── cursor disruption ─────────────────────────────────────────
-const cursorDisruptBtn = document.getElementById("cursor-disrupt-btn");
+const cursorDisruptBtn    = document.getElementById("cursor-disrupt-btn");
+const disruptRadiusSlider = document.getElementById("disrupt-radius-slider");
+const disruptRadiusVal    = document.getElementById("disrupt-radius-val");
 let _cursorDisruptActive = false;
 
 // XP-style cursor trail — ring buffer of recent mouse positions.
@@ -1072,6 +1074,13 @@ cursorDisruptBtn.addEventListener("click", () => {
   _cursorDisruptActive = !_cursorDisruptActive;
   cursorDisruptBtn.classList.toggle("active", _cursorDisruptActive);
   if (!_cursorDisruptActive) viz.setCursorDisrupt(null, false);
+});
+
+// Disruption radius slider — scales the smoothstep outer edge in world units.
+disruptRadiusSlider.addEventListener("input", () => {
+  const r = parseInt(disruptRadiusSlider.value, 10);
+  disruptRadiusVal.textContent = r;
+  viz.setCursorRadius(r);
 });
 
 mobileDismiss.addEventListener("click", () => { mobileNotice.hidden = true; });

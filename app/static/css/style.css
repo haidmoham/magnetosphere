@@ -1473,6 +1473,66 @@ body.ui-hidden #spotify-tooltip {
   box-shadow: 0 0 14px rgba(0, 240, 255, 0.2);
 }
 
+/* Wrapper keeps the button + radius slider in one column unit */
+#disrupt-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+/* Radius slider row — compact, aligned with button width */
+#disrupt-radius-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 2px;
+}
+#disrupt-radius-label {
+  font-family: "Orbitron", monospace;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(246, 214, 255, 0.35);
+  white-space: nowrap;
+  user-select: none;
+}
+#disrupt-radius-val {
+  font-family: "Share Tech Mono", monospace;
+  font-size: 9px;
+  color: rgba(0, 240, 255, 0.5);
+  min-width: 24px;
+  text-align: right;
+}
+#disrupt-radius-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  flex: 1;
+  height: 2px;
+  background: rgba(0, 240, 255, 0.15);
+  border-radius: 1px;
+  outline: none;
+  cursor: pointer;
+}
+#disrupt-radius-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: rgba(0, 240, 255, 0.7);
+  box-shadow: 0 0 6px rgba(0, 240, 255, 0.5);
+  cursor: pointer;
+}
+#disrupt-radius-slider::-moz-range-thumb {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(0, 240, 255, 0.7);
+  box-shadow: 0 0 6px rgba(0, 240, 255, 0.5);
+  cursor: pointer;
+}
+
 /* Cursor disruption toggle — same glass card language as #ui-hide-btn. */
 #cursor-disrupt-btn {
   appearance: none;
