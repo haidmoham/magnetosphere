@@ -1126,16 +1126,24 @@ body::after {
   text-shadow: 0 0 5px rgba(0, 240, 255, 0.5);
 }
 
-/* ─── lower-left row: zoom + hide-ui button ──────────────────── */
+/* ─── lower-left column: zoom row + cursor disrupt toggle ───── */
 #lower-left {
   position: fixed;
   top: 88px;
   left: 20px;
   display: flex;
-  align-items: center;
-  gap: 8px;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
   pointer-events: auto;
   z-index: 11;
+}
+
+/* zoom controls + hide-ui sit on the same horizontal row */
+#zoom-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 #zoom-controls {
@@ -1351,7 +1359,7 @@ body::after {
    ──────────────────────────────────────────────────────────────────── */
 #now-playing {
   position: fixed;
-  top: 140px;
+  top: 176px;
   left: 20px;
   display: flex;
   align-items: center;
@@ -1463,6 +1471,42 @@ body.ui-hidden #spotify-tooltip {
   color: var(--neon-cyan);
   border-color: rgba(0, 240, 255, 0.45);
   box-shadow: 0 0 14px rgba(0, 240, 255, 0.2);
+}
+
+/* Cursor disruption toggle — same glass card language as #ui-hide-btn. */
+#cursor-disrupt-btn {
+  appearance: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  background: rgba(10, 0, 30, 0.7);
+  border: 1px solid rgba(0, 240, 255, 0.18);
+  border-radius: 4px;
+  color: rgba(246, 214, 255, 0.45);
+  font-family: "Orbitron", monospace;
+  font-weight: 700;
+  font-size: 9px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  padding: 6px 10px;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  box-shadow: 0 0 18px rgba(0, 240, 255, 0.04);
+  transition: color 160ms ease, border-color 160ms ease,
+              box-shadow 160ms ease, background 160ms ease;
+}
+#cursor-disrupt-btn:hover {
+  color: var(--neon-cyan);
+  border-color: rgba(0, 240, 255, 0.45);
+  box-shadow: 0 0 14px rgba(0, 240, 255, 0.2);
+}
+/* Active state: glows cyan to signal disruption is on */
+#cursor-disrupt-btn.active {
+  color: var(--neon-cyan);
+  border-color: rgba(0, 240, 255, 0.65);
+  background: rgba(0, 240, 255, 0.1);
+  box-shadow: 0 0 12px rgba(0, 240, 255, 0.35), 0 0 24px rgba(0, 240, 255, 0.12);
+  text-shadow: 0 0 8px rgba(0, 240, 255, 0.7);
 }
 
 /* In hidden mode the button is the sole CTA — make it pulse so it's obvious. */

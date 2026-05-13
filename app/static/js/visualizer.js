@@ -82,6 +82,8 @@ const vertexShader = /* glsl */ `
   uniform vec3  uAttrPos3;
   uniform float uAttrCount;  // active well count (0–4)
   uniform float uAttrStr;    // global pull strength
+  uniform vec3  uCursorPos;      // world-space cursor intersection
+  uniform float uCursorStrength; // 0 = off, 1 = on
   attribute float aSize;
   attribute float aLayer;        // 0 = inner shell, 1 = outer shell
   attribute vec3 aSeed;
@@ -158,6 +160,15 @@ const vertexShader = /* glsl */ `
     if (uAttrCount > 1.5) pos += attrPull(uAttrPos1, pos);
     if (uAttrCount > 2.5) pos += attrPull(uAttrPos2, pos);
     if (uAttrCount > 3.5) pos += attrPull(uAttrPos3, pos);
+
+    // Cursor disruption — repels particles away from the cursor world position
+    if (uCursorStrength > 0.0) {
+      vec3 toCursor = pos - uCursorPos;
+      float d = max(length(toCursor), 0.5);
+      float force = uCursorStrength * 38.0 / (d * 0.045 + 1.0);
+      force *= smoothstep(72.0, 4.0, d);
+      pos += normalize(toCursor) * force;
+    }
 
     // Scatter — each particle flies to its own random chaos position, then reforms
     vec3 scatterTarget = aSeed * 50.0;
@@ -661,6 +672,8 @@ export class Visualizer {
         uAttrPos3:  { value: new THREE.Vector3(  0,  0,-55) },
         uAttrCount: { value: 2 },
         uAttrStr:   { value: 7.5 },
+        uCursorPos:      { value: new THREE.Vector3(0, 0, 0) },
+        uCursorStrength: { value: 0 },
       },
       vertexShader,
       fragmentShader,
@@ -870,6 +883,33 @@ export class Visualizer {
   get zoomMax()     { return this._zoomMax; }
   get zoomDefault() { return this._zoomDefault; }
   get zoomTarget()  { return this._zoomTarget; }
+
+  // ── Cursor disruption ────────────────────────────────────────────────────
+
+  /** Convert canvas screen coords → world-space point on the plane through
+   *  the cloud centre (perpendicular to the camera view direction). */
+  screenToWorld(screenX, screenY) {
+    const ndcX = (screenX / this.renderer.domElement.clientWidth)  * 2 - 1;
+    const ndcY = -(screenY / this.renderer.domElement.clientHeight) * 2 + 1;
+    const dir = new THREE.Vector3(ndcX, ndcY, 0.5)
+      .unproject(this.camera)
+      .sub(this.camera.position)
+      .normalize();
+    // Intersect with the plane at origin perpendicular to the camera's view dir
+    const camDir = new THREE.Vector3();
+    this.camera.getWorldDirection(camDir);
+    const denom = camDir.dot(dir);
+    if (Math.abs(denom) < 1e-6) return null;
+    const t = -camDir.dot(this.camera.position) / denom;
+    return this.camera.position.clone().addScaledVector(dir, t);
+  }
+
+  /** Enable / disable cursor disruption. Pass worldPos from screenToWorld(). */
+  setCursorDisrupt(worldPos, active) {
+    const u = this.particles.material.uniforms;
+    u.uCursorStrength.value = active ? 1.0 : 0.0;
+    if (active && worldPos) u.uCursorPos.value.copy(worldPos);
+  }
 
   // Live-tuning hook for the debug panel.
   //   uX → shader uniform on the particle material
