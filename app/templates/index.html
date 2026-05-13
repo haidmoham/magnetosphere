@@ -73,6 +73,19 @@
       <button id="ui-hide-btn" title="Hide all UI — only nameplate and zoom remain">⊘ hide ui</button>
     </div>
 
+    <div id="spotify-tooltip" hidden>
+      <div class="sp-title">♪ spotify linked</div>
+      <div class="sp-body">
+        <p>For <strong>full reactivity</strong>, connect an audio source alongside Spotify:</p>
+        <ul>
+          <li><span class="help-src">tab audio</span> — share the tab playing Spotify in Chrome; the visualizer reads the live audio</li>
+          <li><span class="help-src">microphone</span> — point your mic at speakers</li>
+        </ul>
+        <p class="sp-note">With both active, Spotify supplies auto-palette + beat phase while the audio source drives real FFT reactivity. Without an audio source, the cloud pulses at BPM cadence only.</p>
+      </div>
+      <button id="spotify-disconnect">✕ disconnect spotify</button>
+    </div>
+
     <div id="source-picker">
       <button class="src-btn" data-src="spotify" hidden>
         <span class="dot"></span>

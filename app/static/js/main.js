@@ -15,10 +15,12 @@ const mobileDismiss = document.getElementById("mobile-dismiss");
 const volSlider   = document.getElementById("vol-slider");
 const sensSlider  = document.getElementById("sens-slider");
 const volRow      = document.getElementById("vol-row");
-const castBtn     = document.getElementById("cast-btn");
-const castTooltip = document.getElementById("cast-tooltip");
-const helpBtn     = document.getElementById("help-btn");
-const helpTooltip = document.getElementById("help-tooltip");
+const castBtn          = document.getElementById("cast-btn");
+const castTooltip      = document.getElementById("cast-tooltip");
+const helpBtn          = document.getElementById("help-btn");
+const helpTooltip      = document.getElementById("help-tooltip");
+const spotifyTooltip   = document.getElementById("spotify-tooltip");
+const spotifyDisconnect = document.getElementById("spotify-disconnect");
 const zoomInBtn   = document.getElementById("zoom-in-btn");
 const zoomOutBtn  = document.getElementById("zoom-out-btn");
 const zoomValue   = document.getElementById("zoom-value");
@@ -69,10 +71,21 @@ if (sessionStorage.getItem("voidpulse.ew.ack")) {
 
 let errorTimer = 0;
 function showError(msg) {
+  errorToast.classList.remove("info");
   errorToast.textContent = msg;
   errorToast.hidden = false;
   clearTimeout(errorTimer);
   errorTimer = setTimeout(() => { errorToast.hidden = true; }, 6000);
+}
+function showInfo(msg) {
+  errorToast.classList.add("info");
+  errorToast.textContent = msg;
+  errorToast.hidden = false;
+  clearTimeout(errorTimer);
+  errorTimer = setTimeout(() => {
+    errorToast.hidden = true;
+    errorToast.classList.remove("info");
+  }, 5000);
 }
 
 function refreshUi() {
@@ -140,7 +153,7 @@ sourcePicker.addEventListener("click", async (e) => {
     refreshUi();
   } else if (src === "spotify") {
     e.preventDefault();
-    await handleSpotifyClick();
+    await handleSpotifyClick(e);
   }
   // file-btn opens the native file picker via its <input>.
 });
@@ -158,11 +171,12 @@ async function probeSpotify() {
   } catch { return { authenticated: false, configured: false }; }
 }
 
-async function handleSpotifyClick() {
-  // Toggle: running → disconnect; not running → connect.
+async function handleSpotifyClick(e) {
   if (spotify.isRunning) {
-    spotify.stop();
-    refreshUi();
+    // Show/hide the info tooltip. Disconnect lives inside the tooltip
+    // so accidental clicks don't break an active session.
+    e?.stopPropagation();
+    spotifyTooltip.hidden = !spotifyTooltip.hidden;
     return;
   }
   const { authenticated, configured } = await probeSpotify();
@@ -196,6 +210,7 @@ async function activateSpotify() {
     };
     await spotify.start();
     refreshUi();
+    showInfo("♪ spotify linked — connect tab audio or mic for full reactivity");
   } catch (err) {
     showError(err.message || String(err));
   }
@@ -907,8 +922,9 @@ function applyUiHidden(on) {
     : "Hide all UI — only nameplate and zoom remain";
   // Close any open tooltips so they don't linger after hiding.
   if (on) {
-    helpTooltip.hidden = true;
-    castTooltip.hidden = true;
+    helpTooltip.hidden    = true;
+    castTooltip.hidden    = true;
+    spotifyTooltip.hidden = true;
   }
   localStorage.setItem(UI_HIDE_KEY, on ? "1" : "0");
 }
@@ -918,19 +934,29 @@ uiHideBtn.addEventListener("click", () => applyUiHidden(!document.body.classList
 
 mobileDismiss.addEventListener("click", () => { mobileNotice.hidden = true; });
 
+spotifyDisconnect.addEventListener("click", (e) => {
+  e.stopPropagation();
+  spotify.stop();
+  spotifyTooltip.hidden = true;
+  refreshUi();
+});
+
 helpBtn.addEventListener("click", (e) => {
   e.stopPropagation();
-  helpTooltip.hidden = !helpTooltip.hidden;
-  castTooltip.hidden = true;
+  helpTooltip.hidden  = !helpTooltip.hidden;
+  castTooltip.hidden  = true;
+  spotifyTooltip.hidden = true;
 });
 castBtn.addEventListener("click", (e) => {
   e.stopPropagation();
-  castTooltip.hidden = !castTooltip.hidden;
-  helpTooltip.hidden = true;
+  castTooltip.hidden  = !castTooltip.hidden;
+  helpTooltip.hidden  = true;
+  spotifyTooltip.hidden = true;
 });
 document.addEventListener("click", () => {
-  castTooltip.hidden = true;
-  helpTooltip.hidden = true;
+  castTooltip.hidden    = true;
+  helpTooltip.hidden    = true;
+  spotifyTooltip.hidden = true;
 });
 
 refreshUi();
