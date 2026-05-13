@@ -19,8 +19,6 @@ const sourceLabel = document.getElementById("source-label");
 const playBtn = document.getElementById("play-btn");
 const stopBtn = document.getElementById("stop-btn");
 const errorToast = document.getElementById("error-toast");
-const mobileNotice = document.getElementById("mobile-notice");
-const mobileDismiss = document.getElementById("mobile-dismiss");
 const volSlider   = document.getElementById("vol-slider");
 const sensSlider  = document.getElementById("sens-slider");
 const volRow      = document.getElementById("vol-row");
@@ -156,18 +154,14 @@ async function connectBeatTracker() {
 }
 
 // ── Mobile detection ─────────────────────────────────────────────────────────
-// Show the demo picker on any touch device narrower than 900px — that covers
-// phones and most tablets. Desktop users with touchscreens are unaffected.
 const isMobile = navigator.maxTouchPoints > 0 && window.innerWidth < 900;
 
-// ── Mobile demo picker ───────────────────────────────────────────────────────
-const mobileDemoEl   = document.getElementById("mobile-demo");
-const mdTracksEl     = document.getElementById("md-tracks");     // suggestions list
-const mdResultsEl    = document.getElementById("md-results");    // search results list
-const mdSuggestEl    = document.getElementById("md-suggestions");
-const mdSearchInput  = document.getElementById("md-search");
-const mdSkipBtn      = document.getElementById("md-skip");
-let _activeTrackBtn  = null;
+// ── Sample search panel ──────────────────────────────────────────────────────
+const mdTracksEl    = document.getElementById("md-tracks");
+const mdResultsEl   = document.getElementById("md-results");
+const mdSuggestEl   = document.getElementById("md-suggestions");
+const mdSearchInput = document.getElementById("md-search");
+let _activeTrackBtn = null;
 
 /** Build a track card button from a { title, artist, preview_url, art_url } object. */
 function buildTrackCard(track) {
@@ -198,7 +192,6 @@ function buildTrackCard(track) {
       return;
     }
     refreshUi();
-    setTimeout(() => { mobileDemoEl.hidden = true; }, 600);
   });
   return btn;
 }
@@ -272,28 +265,18 @@ mdSearchInput.addEventListener("input", () => {
   }, 350);
 });
 
-function showMobileDemo() {
-  mobileDemoEl.hidden = false;
-  loadSuggestions();
-}
-
-mdSkipBtn.addEventListener("click", () => {
-  mobileDemoEl.hidden = true;
-});
+// Load suggestions immediately on mobile — panel is always visible inline.
+if (isMobile) loadSuggestions();
 
 // Photosensitivity warning — shown once per browser session.
 const ewOverlay = document.getElementById("epilepsy-warning");
 const ewProceed = document.getElementById("ew-proceed");
 if (sessionStorage.getItem("voidpulse.ew.ack")) {
   ewOverlay.hidden = true;
-  // EW already seen — show mobile demo immediately if on mobile.
-  if (isMobile) showMobileDemo();
 } else {
   ewProceed.addEventListener("click", () => {
     sessionStorage.setItem("voidpulse.ew.ack", "1");
     ewOverlay.hidden = true;
-    // Show mobile demo after warning is dismissed.
-    if (isMobile) showMobileDemo();
   }, { once: true });
 }
 
@@ -1232,9 +1215,6 @@ disruptRadiusSlider.addEventListener("input", () => {
   viz.setCursorRadius(r);
 });
 
-// On mobile the demo picker replaces the notice; on desktop show it as before.
-if (isMobile) mobileNotice.hidden = true;
-mobileDismiss.addEventListener("click", () => { mobileNotice.hidden = true; });
 
 spotifyDisconnect.addEventListener("click", (e) => {
   e.stopPropagation();

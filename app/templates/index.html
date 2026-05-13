@@ -49,42 +49,7 @@
     </div>
   </div>
 
-  <!-- Mobile demo picker — full-screen intro shown on touch devices. -->
-  <div id="mobile-demo" hidden>
-    <div class="md-inner">
-      <div class="md-wordmark">VOIDPULSE</div>
-
-      <div class="md-search-wrap">
-        <input id="md-search" type="search" placeholder="search any song…"
-               autocomplete="off" autocorrect="off" spellcheck="false">
-      </div>
-
-      <!-- Search results (visible while query is non-empty) -->
-      <div id="md-results" class="md-tracks" hidden></div>
-
-      <!-- Suggestions shelf (visible when no query) -->
-      <div id="md-suggestions">
-        <div class="md-shelf-label">suggested</div>
-        <div id="md-tracks" class="md-tracks">
-          <div class="md-loading">
-            <span class="md-loading-dot"></span>
-            <span class="md-loading-dot"></span>
-            <span class="md-loading-dot"></span>
-          </div>
-        </div>
-      </div>
-
-      <button id="md-skip">use mic instead</button>
-    </div>
-  </div>
-
   <canvas id="stage"></canvas>
-
-  <div id="mobile-notice">
-    <div class="mobile-notice-title">desktop recommended</div>
-    <div class="mobile-notice-body">tab audio capture requires a desktop browser. mic + file sources still work here.</div>
-    <button id="mobile-dismiss">got it</button>
-  </div>
 
   <div id="hud">
     <div id="header-card">
@@ -155,6 +120,25 @@
         <span class="label">audio file</span>
         <span class="hint">fallback — pick an mp3</span>
       </label>
+    </div>
+
+    <!-- Sample search panel — mobile only (hidden on desktop via CSS) -->
+    <div id="sample-panel">
+      <div class="md-search-wrap">
+        <input id="md-search" type="search" placeholder="search any song…"
+               autocomplete="off" autocorrect="off" spellcheck="false">
+      </div>
+      <div id="md-results" class="md-tracks" hidden></div>
+      <div id="md-suggestions">
+        <div class="md-shelf-label">suggested</div>
+        <div id="md-tracks" class="md-tracks">
+          <div class="md-loading">
+            <span class="md-loading-dot"></span>
+            <span class="md-loading-dot"></span>
+            <span class="md-loading-dot"></span>
+          </div>
+        </div>
+      </div>
     </div>
 
     <div id="status-bar">
