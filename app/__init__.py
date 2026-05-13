@@ -1,4 +1,5 @@
 import os
+import time
 from datetime import timedelta
 
 from flask import Flask
@@ -12,6 +13,7 @@ def create_app() -> Flask:
     app = Flask(__name__, static_folder="static", template_folder="templates")
     app.config["SECRET_KEY"]                 = os.environ.get("FLASK_SECRET_KEY", "dev-secret-change-me")
     app.config["APP_VERSION"]                = os.environ.get("APP_VERSION", "1.0")
+    app.config["ASSET_VERSION"]              = os.environ.get("APP_VERSION", str(int(time.time())))
     app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(days=30)
 
     # Spotify OAuth — leave blank to disable the Spotify source.
