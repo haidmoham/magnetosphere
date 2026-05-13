@@ -104,6 +104,42 @@ Smoothing is asymmetric: snap up fast on hits, decay slow (so a bass kick punche
 - [x] Scene transitions (cinematic mode: 6 named camera scenes + paired palette swaps every 12–20s)
 - [ ] Optional: webcam-based hand interaction
 
+### Phase 5 — Spotify beat-sync (faithful recreation goal)
+The original iTunes Magnetosphere used iTunes' internal playback data — exact beat
+positions, song structure, tempo — not raw FFT. That's what made it feel locked-in
+to the music rather than just loudness-reactive. Phase 5 closes that gap.
+
+Spotify Audio Analysis API returns per-track: beat timestamps (ms), bar positions,
+sections (verse/chorus/bridge), segments with pitch + timbre vectors, tempo, key,
+time signature, energy, valence. Pair with the Web Playback SDK for in-browser
+playback and we get everything iTunes gave the original plugin.
+
+**Architecture:**
+- Flask: add `/auth/spotify` + `/auth/callback` OAuth routes + token refresh endpoint
+- Frontend: Spotify Web Playback SDK (Premium required) handles playback in-browser
+- On track load: fetch Audio Analysis, build a beat/bar/section timeline
+- Beat scheduler: align `performance.now()` to `player.getCurrentState().position`,
+  schedule beat/bar events with drift correction each animation frame
+- Existing FFT pipeline stays as fallback for mic/tab/file sources
+
+**What each data type drives:**
+| Spotify data | Visualizer event |
+|---|---|
+| Beat timestamps | `uBurst` fires exactly on beat — replaces onset detector |
+| Bar / downbeat | Cinematic camera cut candidate |
+| Section change | Shape transition + palette swap |
+| Segment pitch vector | Per-frame color entropy modulation |
+| Segment timbre vector | Flow field strength / attractor radius |
+| Track valence + energy | Starting palette selection on load |
+
+- [ ] Flask OAuth routes (`/auth/spotify`, `/auth/callback`, `/auth/refresh`)
+- [ ] Spotify source button in UI + SDK initialisation
+- [ ] Audio Analysis fetch + beat timeline builder
+- [ ] Beat scheduler with drift correction (rAF-aligned)
+- [ ] Wire beat → burst, bar → camera cut candidate, section → shape/palette
+- [ ] Segment pitch/timbre → live uniform modulation
+- [ ] Track valence/energy → auto palette on load
+
 ---
 
 ## Key Decisions Log
@@ -111,6 +147,7 @@ Smoothing is asymmetric: snap up fast on hits, decay slow (so a bass kick punche
 | Decision | Rationale |
 |---|---|
 | 80s synthwave aesthetic | Project-wide visual language: neon cyan + hot pink palette, deep purple background gradient, perspective grid floor, CRT scanlines, Orbitron + Share Tech Mono fonts. New UI elements should match this — no flat material-design defaults. |
+| Spotify beat-sync over FFT-reactive | The original iTunes Magnetosphere used internal playback data (exact beat timestamps, song structure), not raw FFT. Phase 5 targets faithful recreation: Spotify Audio Analysis API provides beat/bar/section/segment data; the existing FFT pipeline stays as fallback for other sources. Requires Spotify Premium. |
 | Real-time audio over file upload | The "live reactivity to whatever's playing" is what makes a visualizer worth building. File upload kept as a fallback. |
 | Tab audio (`getDisplayMedia`) over installing a system audio driver | Zero-install, browser-native. Chrome/Edge support is enough for a hobby project. |
 | three.js over raw WebGL | Particles + camera + render loop boilerplate is solved; the interesting work is in the shader and audio mapping. |
