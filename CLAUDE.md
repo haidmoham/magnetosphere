@@ -95,9 +95,9 @@ Smoothing is asymmetric: snap up fast on hits, decay slow (so a bass kick punche
 - [x] Two-envelope onset detector + 8-frame refractory → cleaner beat bursts
 
 ### Phase 3 — Glow
-- [ ] EffectComposer + UnrealBloomPass
-- [ ] Tonemapping pass
-- [ ] Color palette presets
+- [x] EffectComposer + UnrealBloomPass
+- [x] OutputPass (sRGB + tonemap)
+- [x] Color palette presets (synthwave/inferno/arctic/toxic/void/ember; hue-only swaps)
 
 ### Phase 4 — Magnetosphere proper
 - [x] Audio-reactive attractors (mid orbit speed, bass radius pulse; 0–4 wells tunable)

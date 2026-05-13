@@ -242,6 +242,8 @@ export class Visualizer {
     this.eSatReact   = 0.25;   // treble → saturation + lightness reactivity
     this.eBurstHue   = 0.44;   // burst event → instant chromatic flash (inner/outer diverge)
     this.eStereoColor = 0;     // 0 = mono, 1 = inner reacts to L / outer to R
+    this.eInnerHue   = BASE_INNER_H;  // base hue for the inner (core) color
+    this.eOuterHue   = BASE_OUTER_H;  // base hue for the outer (halo) color
 
     // Floor tuning (live-editable via setTuning).
     Object.assign(this, FLOOR_DEFAULTS);
@@ -556,11 +558,11 @@ export class Visualizer {
     const innerTreble = bands.treble * (1 - stereo) + (bandsL ? bandsL.treble : bands.treble) * stereo;
     const outerBass   = bands.bass   * (1 - stereo) + (bandsR ? bandsR.bass   : bands.bass)   * stereo;
 
-    const iH = (BASE_INNER_H + cycle - innerTreble * this.eTrebleHue - burstShift + 1.0) % 1.0;
+    const iH = (this.eInnerHue + cycle - innerTreble * this.eTrebleHue - burstShift + 1.0) % 1.0;
     const iS = 1.0 - innerTreble * this.eSatReact;
     const iL = 0.50 + innerTreble * this.eSatReact;
 
-    const oH = (BASE_OUTER_H + cycle + outerBass * this.eBassHue + burstShift) % 1.0;
+    const oH = (this.eOuterHue + cycle + outerBass * this.eBassHue + burstShift) % 1.0;
     const oL = 0.45 + outerBass * 0.42;
 
     this._cInner.setHSL(iH, iS, iL);

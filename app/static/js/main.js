@@ -123,7 +123,7 @@ function frame() {
 
 // Tuning panel: sliders write directly to shader uniforms, values persist
 // across reloads via localStorage so a good config survives a refresh.
-const TUNING_KEY = "voidpulse.tuning.v8";
+const TUNING_KEY = "voidpulse.tuning.v9";
 const savedTuning = JSON.parse(localStorage.getItem(TUNING_KEY) || "{}");
 
 // If a slider has data-exponent="N", the raw slider value is raised to the
@@ -389,6 +389,34 @@ function applyPreset(name) {
 
 document.querySelectorAll("#tuning-panel .preset-btn").forEach((btn) => {
   btn.addEventListener("click", () => applyPreset(btn.dataset.preset));
+});
+
+// Color palettes — independent of scene presets. Each one only swaps the
+// inner/outer base hues; cloud behavior + audio reactivity are untouched.
+// Applied by dispatching input events on the hue sliders so the existing
+// transform/display/save/setTuning wiring stays the single source of truth.
+const PALETTES = {
+  synthwave: { eInnerHue: 0.556, eOuterHue: 0.840 },  // cyan + hot pink (default)
+  inferno:   { eInnerHue: 0.100, eOuterHue: 0.970 },  // orange + deep red
+  arctic:    { eInnerHue: 0.500, eOuterHue: 0.620 },  // cyan + cool blue
+  toxic:     { eInnerHue: 0.330, eOuterHue: 0.170 },  // emerald + acid yellow
+  void:      { eInnerHue: 0.720, eOuterHue: 0.860 },  // violet + magenta
+  ember:     { eInnerHue: 0.060, eOuterHue: 0.990 },  // amber + crimson
+};
+
+function applyPalette(name) {
+  const p = PALETTES[name];
+  if (!p) return;
+  for (const [uniform, value] of Object.entries(p)) {
+    const input = document.querySelector(`#tuning-panel input[data-uniform="${uniform}"]`);
+    if (!input) continue;
+    input.value = value;
+    input.dispatchEvent(new Event("input"));
+  }
+}
+
+document.querySelectorAll("#tuning-panel .palette-btn").forEach((btn) => {
+  btn.addEventListener("click", () => applyPalette(btn.dataset.palette));
 });
 
 // User save slots: 4 chips, persisted as full state shapes in localStorage.

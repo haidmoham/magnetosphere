@@ -121,6 +121,14 @@
         <button class="preset-btn" data-preset="storm">storm</button>
         <button class="preset-btn" data-preset="vapor">vapor</button>
       </div>
+      <div class="tuning-palettes">
+        <button class="palette-btn" data-palette="synthwave" title="cyan + hot pink">synthwave</button>
+        <button class="palette-btn" data-palette="inferno"   title="orange + deep red">inferno</button>
+        <button class="palette-btn" data-palette="arctic"    title="cyan + cool blue">arctic</button>
+        <button class="palette-btn" data-palette="toxic"     title="emerald + acid yellow">toxic</button>
+        <button class="palette-btn" data-palette="void"      title="violet + magenta">void</button>
+        <button class="palette-btn" data-palette="ember"     title="amber + crimson">ember</button>
+      </div>
       <div class="tuning-slots">
         <button class="slot-btn" data-slot="1" title="click empty to save · click filled to load · shift+click to overwrite · right-click to clear">slot 1</button>
         <button class="slot-btn" data-slot="2" title="click empty to save · click filled to load · shift+click to overwrite · right-click to clear">slot 2</button>
@@ -288,6 +296,16 @@
           <div class="section-header">
             <button class="section-label" aria-label="Reset color values to defaults">color</button>
             <button class="section-random" title="🎲 randomize section" aria-label="Randomize color values">🎲</button>
+          </div>
+          <div class="slider-row">
+            <label>inner hue</label>
+            <input type="range" data-uniform="eInnerHue" min="0" max="1" step="0.005" value="0.556">
+            <span class="slider-val">0.56</span>
+          </div>
+          <div class="slider-row">
+            <label>outer hue</label>
+            <input type="range" data-uniform="eOuterHue" min="0" max="1" step="0.005" value="0.840">
+            <span class="slider-val">0.84</span>
           </div>
           <div class="slider-row">
             <label>cycle speed</label>
