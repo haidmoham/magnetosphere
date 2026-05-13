@@ -13,6 +13,8 @@ const trebleBar = document.getElementById("treble-bar");
 const errorToast = document.getElementById("error-toast");
 const castBtn     = document.getElementById("cast-btn");
 const castTooltip = document.getElementById("cast-tooltip");
+const helpBtn     = document.getElementById("help-btn");
+const helpTooltip = document.getElementById("help-tooltip");
 
 const audio = new AudioEngine();
 const viz = new Visualizer(canvas);
@@ -95,11 +97,20 @@ function frame() {
   requestAnimationFrame(frame);
 }
 
+helpBtn.addEventListener("click", (e) => {
+  e.stopPropagation();
+  helpTooltip.hidden = !helpTooltip.hidden;
+  castTooltip.hidden = true;
+});
 castBtn.addEventListener("click", (e) => {
   e.stopPropagation();
   castTooltip.hidden = !castTooltip.hidden;
+  helpTooltip.hidden = true;
 });
-document.addEventListener("click", () => { castTooltip.hidden = true; });
+document.addEventListener("click", () => {
+  castTooltip.hidden = true;
+  helpTooltip.hidden = true;
+});
 
 refreshUi();
 requestAnimationFrame(frame);

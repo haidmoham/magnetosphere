@@ -55,6 +55,22 @@
 
     <div id="error-toast" hidden></div>
 
+    <button id="help-btn" aria-label="How to use">? help</button>
+    <div id="help-tooltip" hidden>
+      <div class="help-title">how to use</div>
+      <ol class="help-steps">
+        <li>Open on a <strong>laptop or desktop</strong> — mobile browsers don't support tab audio capture</li>
+        <li>Choose an audio source:
+          <ul>
+            <li><span class="help-src">tab audio</span> — in Chrome/Edge, share a tab that's playing music; the visualizer reacts to it without a mic</li>
+            <li><span class="help-src">microphone</span> — point your mic at speakers or play something out loud nearby</li>
+            <li><span class="help-src">audio file</span> — upload an mp3 or wav as a fallback</li>
+          </ul>
+        </li>
+        <li>Watch the particle field <strong>breathe and pulse</strong> with the music — bass drives the radial swell, mids shift the shape, treble adds sparkle</li>
+      </ol>
+    </div>
+
     <button id="cast-btn" aria-label="How to cast">⬡ cast</button>
     <div id="cast-tooltip" hidden>
       <div class="cast-row">
