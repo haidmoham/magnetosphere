@@ -1351,7 +1351,7 @@ body::after {
    ──────────────────────────────────────────────────────────────────── */
 #now-playing {
   position: fixed;
-  top: 88px;
+  top: 140px;
   left: 20px;
   display: flex;
   align-items: center;
