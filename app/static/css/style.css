@@ -1495,6 +1495,9 @@ body::after {
 }
 /* ─── sample panel — show inline on mobile ────────────────────── */
 @media (max-width: 900px) {
+  /* Hide fixed desktop controls that collide with the scrollable panel */
+  #lower-left { display: none !important; }
+
   #sample-panel {
     display: flex;
     flex-direction: column;
