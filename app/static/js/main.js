@@ -144,7 +144,7 @@ function formatSpotifyLabel() {
 /** Show/hide the now-playing card based on current Spotify state. */
 function updateNowPlaying() {
   const track = spotify.currentTrack;
-  if (!spotify.isRunning || !track || !spotify.isPlaying) {
+  if (!spotify.isRunning || !track) {
     npCard.classList.remove("np-visible");
     return;
   }
@@ -154,6 +154,10 @@ function updateNowPlaying() {
   npArt.src = artUrl;
   npTrack.textContent  = track.name || "";
   npArtist.textContent = (track.artists || []).map(a => a.name).join(", ");
+  // Paused state: dim card + show status line
+  const paused = !spotify.isPlaying;
+  npCard.classList.toggle("np-paused", paused);
+  document.getElementById("np-status").textContent = paused ? "⏸ paused" : "";
   npCard.classList.add("np-visible");
 }
 
