@@ -9,12 +9,16 @@ const COLOR_BG     = 0x08001a;
 const BASE_INNER_H = 0.556;
 const BASE_OUTER_H = 0.840;
 
-// Deformable grid constants
+// Deformable grid constants. Depth & center are tuned so the front edge sits
+// just behind the camera (Z=+300) at max zoom out (camera Z=250) — eliminates
+// the black band that used to appear below the floor when zoomed all the way
+// out. ROWS bumps proportionally so row spacing stays at ~12 units (preserves
+// the original scroll cadence).
 const GRID_COLS      = 64;   // frequency bins left→right
-const GRID_ROWS      = 32;   // depth slices front→back
+const GRID_ROWS      = 46;   // depth slices front→back
 const GRID_WIDTH     = 900;
-const GRID_DEPTH     = 380;
-const GRID_Z_CENTER  = -80;  // world-Z of grid midpoint
+const GRID_DEPTH     = 560;
+const GRID_Z_CENTER  = 20;   // world-Z of grid midpoint (front edge = +300)
 // Floor tuning defaults — overridable via the tuning panel (fMaxH, fScroll, …).
 const FLOOR_DEFAULTS = {
   fMaxH:       30,    // max vertex lift (units)
