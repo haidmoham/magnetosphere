@@ -123,7 +123,7 @@ function frame() {
 
 // Tuning panel: sliders write directly to shader uniforms, values persist
 // across reloads via localStorage so a good config survives a refresh.
-const TUNING_KEY = "voidpulse.tuning.v7";
+const TUNING_KEY = "voidpulse.tuning.v8";
 const savedTuning = JSON.parse(localStorage.getItem(TUNING_KEY) || "{}");
 
 // If a slider has data-exponent="N", the raw slider value is raised to the
@@ -317,7 +317,7 @@ function applyState(state) {
 // slider/stereo keys fall back to HTML defaults / mono.
 const PRESETS = {
   starfield: {
-    sliders: { cAttrCount: 2, uAttrStr: 4.0, cAttrRadius: 55 },
+    sliders: { cAttrCount: 2, uAttrStr: 7.5, cAttrRadius: 55 },
     stereo: { uStereoParticles: 0, fStereoFloor: 0, eStereoColor: 0 },
   },
   heart: {
@@ -330,7 +330,7 @@ const PRESETS = {
       bStrength: 0.48, bRadius: 0.25, bThreshold: 0.38,
       uShapeMix: 1.0,
       eCycleSpeed: 0.05, eBassHue: 0.50, eTrebleHue: 0.10, eSatReact: 0.30, eBurstHue: 0.50,
-      cAttrCount: 1, uAttrStr: 3.0, cAttrRadius: 35,
+      cAttrCount: 1, uAttrStr: 6.0, cAttrRadius: 35,
     },
     stereo: { uStereoParticles: 0, fStereoFloor: 0, eStereoColor: 0 },
   },
@@ -346,7 +346,7 @@ const PRESETS = {
       bStrength: 0.72, bRadius: 0.55, bThreshold: 0.25,
       uShapeMix: 0,
       eCycleSpeed: 0.04, eBassHue: 0.30, eTrebleHue: 0.20, eSatReact: 0.50, eBurstHue: 0.25,
-      cAttrCount: 1, uAttrStr: 2.5, cAttrRadius: 80,
+      cAttrCount: 1, uAttrStr: 4.5, cAttrRadius: 80,
     },
     stereo: { uStereoParticles: 0, fStereoFloor: 0, eStereoColor: 1 },
   },
@@ -362,7 +362,7 @@ const PRESETS = {
       bStrength: 0.42, bRadius: 0.30, bThreshold: 0.55,
       uShapeMix: 0,
       eCycleSpeed: 0.015, eBassHue: 0.42, eTrebleHue: 0.18, eSatReact: 0.65, eBurstHue: 0.40,
-      cAttrCount: 4, uAttrStr: 9.0, cAttrRadius: 65,
+      cAttrCount: 4, uAttrStr: 14.0, cAttrRadius: 65,
     },
     stereo: { uStereoParticles: 1, fStereoFloor: 1, eStereoColor: 1 },
   },
@@ -377,7 +377,7 @@ const PRESETS = {
       bStrength: 0.58, bRadius: 0.48, bThreshold: 0.42,
       uShapeMix: 0.55,
       eCycleSpeed: 0.025, eBassHue: 0.45, eTrebleHue: 0.06, eSatReact: 0.38, eBurstHue: 0.42,
-      cAttrCount: 2, uAttrStr: 5.5, cAttrRadius: 50,
+      cAttrCount: 2, uAttrStr: 9.0, cAttrRadius: 50,
     },
     stereo: { uStereoParticles: 0, fStereoFloor: 1, eStereoColor: 0 },
   },

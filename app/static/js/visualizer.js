@@ -90,12 +90,13 @@ const vertexShader = /* glsl */ `
     return vec3(dx + dx2 * 0.40, dy + dy2 * 0.40, dz + dz2 * 0.40);
   }
 
-  // Soft-falloff gravity pull toward dest. Force peaks at uAttrStr when a
-  // particle is on top of the well, falls to ~uAttrStr/6 at distance 50.
+  // Soft-falloff gravity pull toward dest. Tighter falloff (k=0.0035) makes
+  // the wells form denser visible clusters: at d=50 force ≈ uAttrStr/9, but
+  // close-in particles get pulled into a much tighter knot.
   vec3 attrPull(vec3 dest, vec3 here) {
     vec3  d    = dest - here;
     float dist = max(length(d), 0.001);
-    return (d / dist) * uAttrStr / (dist * dist * 0.002 + 1.0);
+    return (d / dist) * uAttrStr / (dist * dist * 0.0035 + 1.0);
   }
 
   void main() {
@@ -502,7 +503,7 @@ export class Visualizer {
         uAttrPos2:  { value: new THREE.Vector3(  0,  0, 55) },
         uAttrPos3:  { value: new THREE.Vector3(  0,  0,-55) },
         uAttrCount: { value: 2 },
-        uAttrStr:   { value: 4.0 },
+        uAttrStr:   { value: 7.5 },
       },
       vertexShader,
       fragmentShader,
