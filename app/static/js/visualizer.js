@@ -460,8 +460,13 @@ export class Visualizer {
     this._updateColors(bands, t, u.uBurst.value);
     this._updateGrid(freqData);
 
+    // Y-axis spin (podium rotation). Bass speeds it up.
     this.particles.rotation.y += dt * (0.06 + bands.bass * 0.46);
-    this.particles.rotation.x += dt * 0.018;
+    // X-axis tumble — only active for sphere mode. When morphed toward heart,
+    // accumulation is gated and any existing tilt damps back to upright.
+    const shapeMix = u.uShapeMix.value;
+    this.particles.rotation.x += dt * 0.018 * (1 - shapeMix);
+    this.particles.rotation.x *= 1 - shapeMix * dt * 2.5;
 
     // Scroll grid toward camera; loop seamlessly every row-spacing.
     this.grid.position.z =
