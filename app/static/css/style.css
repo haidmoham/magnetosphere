@@ -514,6 +514,11 @@ body::after {
   font-size: 9px;
   letter-spacing: 0.18em;
   text-transform: uppercase;
+  /* inline-flex + center keeps emoji from inflating line-height and
+     misaligning the button row against the "TUNING" title. */
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
   line-height: 1;
   padding: 3px 6px;
   text-shadow: 0 0 4px rgba(165, 102, 255, 0.6);
