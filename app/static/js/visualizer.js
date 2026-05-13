@@ -25,11 +25,11 @@ const FLOOR_DEFAULTS = {
 };
 
 // Bloom defaults — UnrealBloomPass.
-// bStrength is pre-transformed: slider raw 0.42 → pow(0.42, 2.2) ≈ 0.15.
+// bStrength is pre-transformed: slider raw 0.48 → pow(0.48, 2.2) ≈ 0.20.
 const BLOOM_DEFAULTS = {
-  bStrength:  0.15,
-  bRadius:    0.50,
-  bThreshold: 0.30,
+  bStrength:  0.20,
+  bRadius:    0.25,
+  bThreshold: 0.38,
 };
 
 const vertexShader = /* glsl */ `
@@ -156,7 +156,8 @@ export class Visualizer {
     this._cFog   = new THREE.Color();
 
     // Cloud animation params (live-editable via setTuning, c* prefix).
-    this.cBurstInterval = 2.5; // minimum seconds between bursts
+    this.cBurstInterval = 0.5; // minimum seconds between bursts
+    this.cRotateSpeed   = 0.06; // base Y-axis spin rate (rad/s)
     this._lastBurstT    = -Infinity;
 
     // Color entropy params (e* prefix).
@@ -320,19 +321,19 @@ export class Visualizer {
     return out;
   }
 
-  // Heart: 2D implicit heart curve  (x² + y² − 1)³ − x²y³ = 0  extruded into Z.
-  // Cleft at y = +1, point at y ≈ −1, lobes spread along ±x. The 2D silhouette
-  // is much more recognizable than Taubin's 3D heart whose shallow cleft gets
-  // smeared out by volume sampling. A puffy z-thickness gives it 3D depth.
+  // Heart: 2D implicit heart curve  (x² + y² − 1)³ − k·x²y³ = 0  extruded into Z.
+  // k > 1 deepens the top cleft and sharpens the bottom point. Cleft at y = +1,
+  // point at y ≈ −1, lobes spread along ±x. A puffy z-thickness gives it 3D depth.
   _sampleHeart(n) {
     const out   = new Float32Array(n * 3);
     const scale = 36;
+    const k     = 1.55;   // cleft / point sharpness
     let i = 0;
     while (i < n) {
       const x = (Math.random() - 0.5) * 2.6;
       const y = (Math.random() - 0.5) * 2.6;
       const a = x * x + y * y - 1;
-      const f = a * a * a - x * x * y * y * y;
+      const f = a * a * a - k * x * x * y * y * y;
       if (f >= 0) continue;
       // Puffy 3D thickness — scales with how deep inside the 2D heart we are.
       const thick = 0.55 * Math.sqrt(Math.max(0, -f / 0.4));
@@ -377,10 +378,10 @@ export class Visualizer {
         uColorInner:   { value: new THREE.Color().setHSL(BASE_INNER_H, 1.0, 0.55) },
         uColorOuter:   { value: new THREE.Color().setHSL(BASE_OUTER_H, 1.0, 0.50) },
         uBreatheMin:   { value: 0.35 },
-        uBreatheMax:   { value: 1.70 },
+        uBreatheMax:   { value: 2.50 },
         uBreatheCurve: { value: 2.35 },
         uSizeMin:      { value: 0.14 },
-        uSizeMax:      { value: 1.60 },
+        uSizeMax:      { value: 2.15 },
         uSizeCurve:    { value: 3.00 },
         uShapeMix:     { value: 1.00 },   // 0 = sphere, 1 = heart
       },
@@ -461,7 +462,7 @@ export class Visualizer {
     this._updateGrid(freqData);
 
     // Y-axis spin (podium rotation). Bass speeds it up.
-    this.particles.rotation.y += dt * (0.06 + bands.bass * 0.46);
+    this.particles.rotation.y += dt * (this.cRotateSpeed + bands.bass * 0.46);
     // X-axis tumble — only active for sphere mode. When morphed toward heart,
     // accumulation is gated and any existing tilt damps back to upright.
     const shapeMix = u.uShapeMix.value;
