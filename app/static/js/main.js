@@ -391,17 +391,54 @@ document.querySelectorAll("#tuning-panel .preset-btn").forEach((btn) => {
   btn.addEventListener("click", () => applyPreset(btn.dataset.preset));
 });
 
-// Color palettes — independent of scene presets. Each one only swaps the
-// inner/outer base hues; cloud behavior + audio reactivity are untouched.
-// Applied by dispatching input events on the hue sliders so the existing
-// transform/display/save/setTuning wiring stays the single source of truth.
+// Color palettes — full visual mood swaps. Each touches base hues, the five
+// color-reactivity sliders, bloom (strength/radius/threshold), and particle
+// size character so palettes feel genuinely different — not just tinted.
+// Stays off cloud dynamics (breathe, rotate, attractors, flow, beats) so
+// you can layer any palette onto any scene preset without behavior change.
 const PALETTES = {
-  synthwave: { eInnerHue: 0.556, eOuterHue: 0.840 },  // cyan + hot pink (default)
-  inferno:   { eInnerHue: 0.100, eOuterHue: 0.970 },  // orange + deep red
-  arctic:    { eInnerHue: 0.500, eOuterHue: 0.620 },  // cyan + cool blue
-  toxic:     { eInnerHue: 0.330, eOuterHue: 0.170 },  // emerald + acid yellow
-  void:      { eInnerHue: 0.720, eOuterHue: 0.860 },  // violet + magenta
-  ember:     { eInnerHue: 0.060, eOuterHue: 0.990 },  // amber + crimson
+  // Electric neon: small sharp particles, low bloom, sat hues — the 80s default.
+  synthwave: {
+    eInnerHue: 0.556, eOuterHue: 0.840,
+    eCycleSpeed: 0.00, eBassHue: 0.10, eTrebleHue: 0.10, eSatReact: 0.25, eBurstHue: 0.44,
+    bStrength: 0.395, bRadius: 0.39, bThreshold: 0.71,
+    uSizeMin: 0.24, uSizeMax: 1.72, uSizeCurve: 2.65,
+  },
+  // Hellfire: dense bloom, hot bass-pulled hues, intense burst flash.
+  inferno: {
+    eInnerHue: 0.10, eOuterHue: 0.97,
+    eCycleSpeed: 0.02, eBassHue: 0.40, eTrebleHue: 0.18, eSatReact: 0.60, eBurstHue: 0.40,
+    bStrength: 0.72, bRadius: 0.55, bThreshold: 0.30,
+    uSizeMin: 0.18, uSizeMax: 1.40, uSizeCurve: 2.30,
+  },
+  // Glacier: big soft particles, wide diffuse halo, minimal color reactivity.
+  arctic: {
+    eInnerHue: 0.50, eOuterHue: 0.62,
+    eCycleSpeed: 0.00, eBassHue: 0.06, eTrebleHue: 0.06, eSatReact: 0.15, eBurstHue: 0.20,
+    bStrength: 0.62, bRadius: 0.65, bThreshold: 0.35,
+    uSizeMin: 0.40, uSizeMax: 2.20, uSizeCurve: 1.50,
+  },
+  // Radioactive: eerie greens, max sat reactivity, fastest hue cycle.
+  toxic: {
+    eInnerHue: 0.33, eOuterHue: 0.17,
+    eCycleSpeed: 0.06, eBassHue: 0.30, eTrebleHue: 0.25, eSatReact: 0.70, eBurstHue: 0.50,
+    bStrength: 0.55, bRadius: 0.40, bThreshold: 0.50,
+    uSizeMin: 0.22, uSizeMax: 1.60, uSizeCurve: 2.40,
+  },
+  // Deep space: large slow particles, continuous color drift, dreamy bloom.
+  void: {
+    eInnerHue: 0.72, eOuterHue: 0.86,
+    eCycleSpeed: 0.06, eBassHue: 0.45, eTrebleHue: 0.06, eSatReact: 0.40, eBurstHue: 0.30,
+    bStrength: 0.72, bRadius: 0.55, bThreshold: 0.40,
+    uSizeMin: 0.45, uSizeMax: 1.95, uSizeCurve: 1.80,
+  },
+  // Warm glowing campfire: heaviest bloom, big soft amber particles, stable hue.
+  ember: {
+    eInnerHue: 0.06, eOuterHue: 0.99,
+    eCycleSpeed: 0.00, eBassHue: 0.15, eTrebleHue: 0.05, eSatReact: 0.20, eBurstHue: 0.30,
+    bStrength: 0.80, bRadius: 0.50, bThreshold: 0.40,
+    uSizeMin: 0.42, uSizeMax: 2.10, uSizeCurve: 2.00,
+  },
 };
 
 function applyPalette(name) {
