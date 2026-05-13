@@ -108,7 +108,13 @@ stopBtn.addEventListener("click", async () => {
 
 function frame() {
   const bands = audio.bands();
-  viz.render(bands, audio.rawFreq(), audio.beat());
+  const stereo = {
+    bandsL:    audio.bandsL(),
+    bandsR:    audio.bandsR(),
+    freqDataL: audio.rawFreqL(),
+    freqDataR: audio.rawFreqR(),
+  };
+  viz.render(bands, audio.rawFreq(), audio.beat(), stereo);
   requestAnimationFrame(frame);
 }
 
@@ -281,6 +287,30 @@ tuningReset.addEventListener("click", () => {
     delete savedTuning[input.dataset.uniform];
   });
   localStorage.removeItem(TUNING_KEY);
+});
+
+// Stereo toggles — three independent on/off switches for hemisphere split,
+// floor split, and color divergence. Persist across reloads.
+const STEREO_KEY = "voidpulse.stereo.v1";
+const savedStereo = JSON.parse(localStorage.getItem(STEREO_KEY) || "{}");
+
+document.querySelectorAll(".stereo-btn").forEach((btn) => {
+  const uniform = btn.dataset.stereo;
+  const restored = savedStereo[uniform] === 1 ? 1 : 0;
+  btn.dataset.on = restored;
+  btn.textContent = restored ? "stereo" : "mono";
+  btn.classList.toggle("on", restored === 1);
+  viz.setTuning(uniform, restored);
+
+  btn.addEventListener("click", () => {
+    const next = btn.dataset.on === "1" ? 0 : 1;
+    btn.dataset.on = next;
+    btn.textContent = next ? "stereo" : "mono";
+    btn.classList.toggle("on", next === 1);
+    viz.setTuning(uniform, next);
+    savedStereo[uniform] = next;
+    localStorage.setItem(STEREO_KEY, JSON.stringify(savedStereo));
+  });
 });
 
 // Volume (file only) + Sensitivity (all modes) — both persist via localStorage.

@@ -31,15 +31,22 @@ export class AudioEngine {
     this.ctx = null;
     this.analyser = null;
     this.gainNode = null;
+    this.splitter = null;
+    this.analyserL = null;
+    this.analyserR = null;
     this.source = null;
     this.mode = null; // "mic" | "system" | "file" | null
     this.audio = null;
     this.stream = null;
-    this.freqData = null;
+    this.freqData  = null;
+    this.freqDataL = null;
+    this.freqDataR = null;
     this.label = "";
     this._volume      = 0.7;   // file playback volume only
     this._sensitivity = 1.0;   // visualizer reactivity, all modes
-    this._smoothed = { bass: 0, mid: 0, treble: 0 };
+    this._smoothed  = { bass: 0, mid: 0, treble: 0 };
+    this._smoothedL = { bass: 0, mid: 0, treble: 0 };
+    this._smoothedR = { bass: 0, mid: 0, treble: 0 };
     this._bassEnv  = 0;   // slow envelope for onset detection
     this._beat     = false;
   }
@@ -52,11 +59,31 @@ export class AudioEngine {
   }
 
   _buildAnalyser() {
+    // Mono analyser — reads the summed signal, used for beat detection and the
+    // primary {bass, mid, treble} band values that drive everything by default.
     const a = this.ctx.createAnalyser();
     a.fftSize = 1024;
     a.smoothingTimeConstant = 0.78;
     this.analyser = a;
     this.freqData = new Uint8Array(a.frequencyBinCount);
+
+    // Stereo split — one AnalyserNode per channel, tapped in parallel via a
+    // ChannelSplitterNode. Costs two extra FFTs per frame; fine at fftSize 1024.
+    this.splitter = this.ctx.createChannelSplitter(2);
+
+    const aL = this.ctx.createAnalyser();
+    aL.fftSize = 1024;
+    aL.smoothingTimeConstant = 0.78;
+    this.analyserL = aL;
+    this.freqDataL = new Uint8Array(aL.frequencyBinCount);
+    this.splitter.connect(aL, 0);
+
+    const aR = this.ctx.createAnalyser();
+    aR.fftSize = 1024;
+    aR.smoothingTimeConstant = 0.78;
+    this.analyserR = aR;
+    this.freqDataR = new Uint8Array(aR.frequencyBinCount);
+    this.splitter.connect(aR, 1);
   }
 
   async _teardownCurrent() {
@@ -77,6 +104,18 @@ export class AudioEngine {
       try { this.gainNode.disconnect(); } catch {}
       this.gainNode = null;
     }
+    if (this.splitter) {
+      try { this.splitter.disconnect(); } catch {}
+      this.splitter = null;
+    }
+    if (this.analyserL) {
+      try { this.analyserL.disconnect(); } catch {}
+      this.analyserL = null;
+    }
+    if (this.analyserR) {
+      try { this.analyserR.disconnect(); } catch {}
+      this.analyserR = null;
+    }
     if (this.analyser) {
       try { this.analyser.disconnect(); } catch {}
       this.analyser = null;
@@ -96,6 +135,7 @@ export class AudioEngine {
     this.source = this.ctx.createMediaStreamSource(stream);
     this._buildAnalyser();
     this.source.connect(this.analyser);
+    this.source.connect(this.splitter);
     // No connect to destination — would feed back.
     if (this.ctx.state === "suspended") await this.ctx.resume();
     this.mode = "mic";
@@ -122,6 +162,7 @@ export class AudioEngine {
     this.source = this.ctx.createMediaStreamSource(stream);
     this._buildAnalyser();
     this.source.connect(this.analyser);
+    this.source.connect(this.splitter);
     // No connect to destination — the source tab is still playing the audio out loud.
 
     // If the user clicks "Stop sharing" in the browser bar, drop the stream cleanly.
@@ -149,6 +190,7 @@ export class AudioEngine {
     g.gain.value = this._volume;
     this.gainNode = g;
     this.source.connect(this.analyser);
+    this.source.connect(this.splitter);
     this.analyser.connect(this.gainNode);
     this.gainNode.connect(this.ctx.destination);
     if (this.ctx.state === "suspended") await this.ctx.resume();
@@ -178,21 +220,17 @@ export class AudioEngine {
     return this.mode === "mic" || this.mode === "system";
   }
 
-  // Raw frequency array — call after bands() so freqData is fresh.
-  rawFreq() {
-    return this.freqData;
-  }
+  // Raw frequency arrays — call after bands*() so the buffers are fresh.
+  rawFreq()  { return this.freqData;  }
+  rawFreqL() { return this.freqDataL; }
+  rawFreqR() { return this.freqDataR; }
 
-  // Returns smoothed energy in [0, 1] for three bands.
+  // Shared band extractor — reads a freq buffer into smoothed energy values.
   // Bin width at 44.1kHz / fftSize=1024 ≈ 43Hz.
   //   bass:   bins  1–6    (~40–260 Hz)
   //   mid:    bins  7–46   (~300 Hz–2 kHz)
   //   treble: bins 47–255  (~2 kHz–11 kHz)
-  bands() {
-    if (!this.analyser) return { bass: 0, mid: 0, treble: 0 };
-    this.analyser.getByteFrequencyData(this.freqData);
-    const bins = this.freqData;
-
+  _computeBands(bins, smooth) {
     const sens = this._sensitivity;
 
     let bass = 0;
@@ -208,16 +246,37 @@ export class AudioEngine {
     treble = Math.min(1, (treble / (209 * 255)) * sens);
 
     // Asymmetric smoothing: snap up fast on hits, decay slow.
-    const s = this._smoothed;
-    s.bass = bass > s.bass ? bass : s.bass * 0.88 + bass * 0.12;
-    s.mid = mid > s.mid ? mid : s.mid * 0.82 + mid * 0.18;
-    s.treble = treble > s.treble ? treble : s.treble * 0.78 + treble * 0.22;
+    smooth.bass   = bass   > smooth.bass   ? bass   : smooth.bass   * 0.88 + bass   * 0.12;
+    smooth.mid    = mid    > smooth.mid    ? mid    : smooth.mid    * 0.82 + mid    * 0.18;
+    smooth.treble = treble > smooth.treble ? treble : smooth.treble * 0.78 + treble * 0.22;
 
-    // Onset detection: beat fires when raw bass jumps >40% above slow envelope.
-    this._bassEnv = this._bassEnv * 0.88 + bass * 0.12;
-    this._beat = bass > this._bassEnv * 1.25 && bass > 0.11;
+    return { bass: smooth.bass, mid: smooth.mid, treble: smooth.treble, _rawBass: bass };
+  }
 
-    return { bass: s.bass, mid: s.mid, treble: s.treble };
+  bands() {
+    if (!this.analyser) return { bass: 0, mid: 0, treble: 0 };
+    this.analyser.getByteFrequencyData(this.freqData);
+    const out = this._computeBands(this.freqData, this._smoothed);
+
+    // Onset detection on mono: beat fires when raw bass jumps >25% above envelope.
+    this._bassEnv = this._bassEnv * 0.88 + out._rawBass * 0.12;
+    this._beat = out._rawBass > this._bassEnv * 1.25 && out._rawBass > 0.11;
+
+    return { bass: out.bass, mid: out.mid, treble: out.treble };
+  }
+
+  bandsL() {
+    if (!this.analyserL) return { bass: 0, mid: 0, treble: 0 };
+    this.analyserL.getByteFrequencyData(this.freqDataL);
+    const out = this._computeBands(this.freqDataL, this._smoothedL);
+    return { bass: out.bass, mid: out.mid, treble: out.treble };
+  }
+
+  bandsR() {
+    if (!this.analyserR) return { bass: 0, mid: 0, treble: 0 };
+    this.analyserR.getByteFrequencyData(this.freqDataR);
+    const out = this._computeBands(this.freqDataR, this._smoothedR);
+    return { bass: out.bass, mid: out.mid, treble: out.treble };
   }
 
   beat() { return this._beat; }
