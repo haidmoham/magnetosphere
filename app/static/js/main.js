@@ -1,5 +1,6 @@
 import { AudioEngine } from "./audio.js";
 import { Visualizer } from "./visualizer.js";
+import { SpotifyEngine } from "./spotify.js";
 
 const canvas = document.getElementById("stage");
 const sourcePicker = document.getElementById("source-picker");
@@ -21,8 +22,10 @@ const zoomInBtn   = document.getElementById("zoom-in-btn");
 const zoomOutBtn  = document.getElementById("zoom-out-btn");
 const zoomValue   = document.getElementById("zoom-value");
 
-const audio = new AudioEngine();
-const viz = new Visualizer(canvas);
+const audio   = new AudioEngine();
+const viz     = new Visualizer(canvas);
+const spotify = new SpotifyEngine();
+const spotifyBtn = document.querySelector('.src-btn[data-src="spotify"]');
 
 // Photosensitivity warning — shown once per browser session.
 const ewOverlay = document.getElementById("epilepsy-warning");
@@ -58,6 +61,11 @@ function refreshUi() {
     playBtn.hidden = false;
     playBtn.textContent = audio.isPlaying() ? "pause" : "play";
     stopBtn.hidden = false;
+  } else if (audio.mode === "spotify") {
+    // SDK handles playback; play button toggles it.
+    playBtn.hidden = false;
+    playBtn.textContent = spotifyIsPaused ? "play" : "pause";
+    stopBtn.hidden = false;
   } else if (audio.mode === "mic" || audio.mode === "system") {
     playBtn.hidden = true;
     stopBtn.hidden = false;
@@ -66,6 +74,9 @@ function refreshUi() {
     stopBtn.hidden = true;
   }
 }
+
+// Tracks Spotify SDK player state — refreshUi reads this to label the play btn.
+let spotifyIsPaused = true;
 
 sourcePicker.addEventListener("click", async (e) => {
   const btn = e.target.closest(".src-btn");
@@ -81,9 +92,98 @@ sourcePicker.addEventListener("click", async (e) => {
     try { await audio.useMicrophone(); }
     catch (err) { showError(err.message || String(err)); }
     refreshUi();
+  } else if (src === "spotify") {
+    e.preventDefault();
+    await handleSpotifyClick();
   }
   // file-btn opens the native file picker via its <input>.
 });
+
+// ── Spotify integration ──────────────────────────────────────────────
+// Flow: probe /auth/spotify/status. If unconfigured, hide the button.
+// If configured but unauthenticated, clicking it kicks off OAuth (full-page
+// redirect). On return, ?spotify=connected auto-activates the source.
+
+async function probeSpotify() {
+  try {
+    const r = await fetch("/auth/spotify/status");
+    if (!r.ok) return { authenticated: false, configured: false };
+    return await r.json();
+  } catch { return { authenticated: false, configured: false }; }
+}
+
+async function handleSpotifyClick() {
+  const { authenticated, configured } = await probeSpotify();
+  if (!configured) {
+    showError("Spotify source is not configured on this server.");
+    return;
+  }
+  if (!authenticated) {
+    // Full-page redirect to Spotify OAuth; we come back to /?spotify=connected.
+    window.location.href = "/auth/spotify/login";
+    return;
+  }
+  await activateSpotify();
+}
+
+async function activateSpotify() {
+  try {
+    spotifyBtn.querySelector(".hint").textContent = "connecting…";
+    await audio.useSpotify("spotify · connecting");
+    refreshUi();
+
+    // Hooks before init so we don't miss the first ready / state-change event.
+    spotify.onReady = async () => {
+      try {
+        await spotify.transferToThisDevice(false);
+        audio.label = "spotify · ready";
+      } catch (err) {
+        showError(`Spotify transfer failed: ${err.message || err}`);
+      }
+      refreshUi();
+    };
+    spotify.onTrackChange = (track) => {
+      const artists = (track.artists || []).map(a => a.name).join(", ");
+      audio.label = `spotify · ${track.name}${artists ? " — " + artists : ""}`;
+      refreshUi();
+    };
+    spotify.onStateChange = (state) => {
+      spotifyIsPaused = !!state.paused;
+      refreshUi();
+    };
+    spotify.onError = ({ type, message }) => {
+      showError(`Spotify ${type.replace(/_/g, " ")}: ${message}`);
+    };
+
+    await spotify.init();
+  } catch (err) {
+    showError(err.message || String(err));
+    spotifyBtn.querySelector(".hint").textContent = "connect spotify · beat-synced";
+  }
+}
+
+// On load: surface OAuth errors, auto-activate after a successful callback,
+// and reveal the Spotify button only when the server has it configured.
+(async () => {
+  const params = new URLSearchParams(location.search);
+  if (params.has("spotify_error")) {
+    showError(`Spotify auth: ${params.get("spotify_error")}`);
+  }
+  const status = await probeSpotify();
+  if (status.configured) {
+    spotifyBtn.hidden = false;
+    if (status.authenticated) {
+      spotifyBtn.querySelector(".hint").textContent = "play through spotify · beat-synced";
+    }
+  }
+  if (params.has("spotify")) {
+    // Strip the param from the URL bar so reloads don't re-trigger.
+    history.replaceState({}, "", location.pathname);
+    if (params.get("spotify") === "connected" && status.authenticated) {
+      activateSpotify();
+    }
+  }
+})();
 
 fileInput.addEventListener("change", async () => {
   const file = fileInput.files?.[0];
@@ -98,13 +198,22 @@ fileInput.addEventListener("change", async () => {
 });
 
 playBtn.addEventListener("click", async () => {
+  if (audio.mode === "spotify") {
+    await spotify.togglePlay();
+    // onStateChange fires from the SDK and updates spotifyIsPaused + UI.
+    return;
+  }
   if (audio.isPlaying()) audio.pause();
   else await audio.play();
   refreshUi();
 });
 
 stopBtn.addEventListener("click", async () => {
-  audio.pause();
+  if (audio.mode === "spotify") {
+    await spotify.disconnect();
+  } else {
+    audio.pause();
+  }
   await audio._teardownCurrent();
   refreshUi();
 });

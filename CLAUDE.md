@@ -132,13 +132,25 @@ playback and we get everything iTunes gave the original plugin.
 | Segment timbre vector | Flow field strength / attractor radius |
 | Track valence + energy | Starting palette selection on load |
 
-- [ ] Flask OAuth routes (`/auth/spotify`, `/auth/callback`, `/auth/refresh`)
-- [ ] Spotify source button in UI + SDK initialisation
-- [ ] Audio Analysis fetch + beat timeline builder
-- [ ] Beat scheduler with drift correction (rAF-aligned)
-- [ ] Wire beat → burst, bar → camera cut candidate, section → shape/palette
-- [ ] Segment pitch/timbre → live uniform modulation
-- [ ] Track valence/energy → auto palette on load
+**Phase 5.1 — OAuth + playback foundation (active)**
+- [x] Flask OAuth blueprint (`/auth/spotify/{login,callback,token,status,logout}`)
+- [x] `SpotifyEngine` (SDK loader, player init, token auto-refresh, transfer)
+- [x] Spotify source button in picker (hidden unless server is configured)
+- [x] `audio.useSpotify()` stub mode — bypasses FFT pipeline
+
+**Phase 5.2 — Audio Analysis + beat scheduler (next)**
+- [ ] Fetch `/v1/audio-analysis/{id}` on track change; build typed timeline
+- [ ] rAF-aligned scheduler with drift correction against player position
+- [ ] Wire beat → `uBurst`, bar → camera cut candidate, section → shape/palette
+- [ ] Segment pitch vector → color entropy, timbre → flow/attractor
+- [ ] Track valence/energy → starting palette on load
+
+**Phase 5 ops notes:**
+- Spotify dev dashboard: register `${BASE_URL}/auth/spotify/callback` as a
+  redirect URI. Use 127.0.0.1 for local dev (Spotify blocks raw `localhost` on new apps).
+- Required env vars on Railway: `SPOTIFY_CLIENT_ID`, `SPOTIFY_CLIENT_SECRET`,
+  `SPOTIFY_REDIRECT_URI=https://voidpulse.up.railway.app/auth/spotify/callback`
+- Tokens live in Flask signed-cookie sessions (`PERMANENT_SESSION_LIFETIME=30d`).
 
 ---
 
