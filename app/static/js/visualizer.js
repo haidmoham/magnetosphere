@@ -529,7 +529,7 @@ export class Visualizer {
     this.grid.position.z =
       (this.grid.position.z + dt * (this.fScroll + bands.bass * this.fScrollBass)) % this._gridRowSpacing;
 
-    this.camera.position.x = Math.sin(t * 0.08) * 13;
+    this.camera.position.x = 0;
     this.camera.position.y = 12 + Math.cos(t * 0.06) * 2.5;
     this.camera.lookAt(0, -6, 0);
 
