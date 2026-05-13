@@ -90,9 +90,9 @@ Smoothing is asymmetric: snap up fast on hits, decay slow (so a bass kick punche
 - [ ] Verify against reference: open in Chrome, share a tab playing music, confirm reactivity
 
 ### Phase 2 — Flow + character
-- [ ] Curl-noise / flow-field motion (currently just swirl + jitter)
-- [ ] Multiple shells / layers
-- [ ] Beat detection (onset detector on bass envelope) → spawn bursts
+- [x] 2-octave curl-noise flow field (uFlowStrength uniform, tunable)
+- [x] Inner / outer shells (55% radii 18–36 / 45% radii 44–66, aLayer attribute)
+- [x] Two-envelope onset detector + 8-frame refractory → cleaner beat bursts
 
 ### Phase 3 — Glow
 - [ ] EffectComposer + UnrealBloomPass

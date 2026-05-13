@@ -61,20 +61,26 @@ const vertexShader = /* glsl */ `
   uniform float uSizeMax;
   uniform float uSizeCurve;
   uniform float uShapeMix;
+  uniform float uFlowStrength;   // tuning panel multiplier for flow amplitude
   attribute float aSize;
+  attribute float aLayer;        // 0 = inner shell, 1 = outer shell
   attribute vec3 aSeed;
   attribute vec3 aPositionTarget;
   varying float vRadial;
   varying float vBright;
 
-  // Pseudo-curl flow field: each axis is a cross-derivative of sin-noise,
-  // producing divergence-free-ish currents with no global drift.
-  vec3 flowField(vec3 p, float t) {
-    vec3 q = p * 0.035;
-    float dx = sin(q.y * 1.4 + t * 0.22 + q.z * 0.9) - sin(q.z * 1.1 + t * 0.18);
-    float dy = sin(q.z * 1.3 + t * 0.19 + q.x * 0.8) - sin(q.x * 1.2 + t * 0.23);
-    float dz = sin(q.x * 1.1 + t * 0.21 + q.y * 0.7) - sin(q.y * 1.3 + t * 0.17);
-    return vec3(dx, dy, dz);
+  // 2-octave analytic-curl flow field — divergence-free-ish swirling currents.
+  // Oct 1: large-scale organic drift. Oct 2: finer turbulence, faster evolution.
+  vec3 curlFlow(vec3 p, float t) {
+    vec3 q = p * 0.030;
+    float dx = sin(q.y * 1.4 + t * 0.19 + q.z * 0.9) - sin(q.z * 1.1 + t * 0.15 + q.x * 0.7);
+    float dy = sin(q.z * 1.3 + t * 0.17 + q.x * 0.8) - sin(q.x * 1.2 + t * 0.21 + q.y * 0.6);
+    float dz = sin(q.x * 1.1 + t * 0.20 + q.y * 0.7) - sin(q.y * 1.3 + t * 0.16 + q.z * 0.8);
+    vec3 q2 = p * 0.075;
+    float dx2 = sin(q2.y * 1.2 + t * 0.43 + q2.z) - sin(q2.z * 0.9 + t * 0.38 + q2.x);
+    float dy2 = sin(q2.z * 1.1 + t * 0.40 + q2.x) - sin(q2.x * 1.0 + t * 0.45 + q2.y);
+    float dz2 = sin(q2.x * 0.9 + t * 0.41 + q2.y) - sin(q2.y * 1.1 + t * 0.36 + q2.z);
+    return vec3(dx + dx2 * 0.40, dy + dy2 * 0.40, dz + dz2 * 0.40);
   }
 
   void main() {
@@ -94,11 +100,12 @@ const vertexShader = /* glsl */ `
     float midP    = mix(uMid,    midChan,    uStereoParticles);
     float trebleP = mix(uTreble, trebleChan, uStereoParticles);
 
-    // Flow field displacement — scales up with mid energy
-    vec3 pos = basePos + flowField(basePos, uTime) * (2.0 + midP * 2.5);
+    // 2-octave curl flow — outer shell (aLayer=1) rides the field harder
+    float flowAmp = (2.0 + midP * 2.5) * (1.0 + aLayer * 0.65) * uFlowStrength;
+    vec3 pos = basePos + curlFlow(basePos, uTime) * flowAmp;
 
-    // Swirl rotation
-    float angle = uTime * 0.04 + r * 0.012 + aSeed.x * 0.6;
+    // Swirl rotation — outer shell orbits fractionally faster
+    float angle = uTime * (0.04 + aLayer * 0.016) + r * 0.012 + aSeed.x * 0.6;
     float c = cos(angle), s = sin(angle);
     pos = vec3(
       pos.x * c - pos.z * s,
@@ -120,7 +127,8 @@ const vertexShader = /* glsl */ `
     vec3 scatterTarget = aSeed * 50.0;
     pos = mix(pos, scatterTarget, uScatter);
 
-    vRadial = clamp(r / 60.0, 0.0, 1.0);
+    // Outer shell biased toward the outer (hot) color
+    vRadial = clamp(r / 60.0 + aLayer * 0.18, 0.0, 1.0);
     vBright = 0.55 + bassP * 1.05 + trebleP * 0.45 + uBurst * 1.1 + uEcho * 0.7 + uScatter * 0.6;
 
     vec4 mv = modelViewMatrix * vec4(pos, 1.0);
@@ -350,12 +358,12 @@ export class Visualizer {
 
   // ── Particles ────────────────────────────────────────────────────────────
 
-  // Sphere: thick shell, radii 25–55, weighted toward outer edge.
-  _sampleSphere(n) {
+  // Sphere shell between rMin and rMax, weighted toward the outer edge.
+  _sampleSphereRange(n, rMin, rMax) {
     const out = new Float32Array(n * 3);
     for (let i = 0; i < n; i++) {
       const u      = Math.random();
-      const radius = 25 + Math.pow(u, 0.6) * 30;
+      const radius = rMin + Math.pow(u, 0.6) * (rMax - rMin);
       const theta  = Math.random() * Math.PI * 2;
       const phi    = Math.acos(2 * Math.random() - 1);
       const sinPhi = Math.sin(phi);
@@ -369,9 +377,9 @@ export class Visualizer {
   // Heart: 2D implicit heart curve  (x² + y² − 1)³ − k·x²y³ = 0  extruded into Z.
   // k > 1 deepens the top cleft and sharpens the bottom point. Cleft at y = +1,
   // point at y ≈ −1, lobes spread along ±x. A puffy z-thickness gives it 3D depth.
-  _sampleHeart(n) {
+  // scale controls size — inner shell uses a tighter heart, outer uses a larger one.
+  _sampleHeart(n, scale = 36) {
     const out   = new Float32Array(n * 3);
-    const scale = 36;
     const k     = 1.55;   // cleft / point sharpness
     let i = 0;
     while (i < n) {
@@ -392,23 +400,42 @@ export class Visualizer {
   }
 
   _buildParticles() {
-    const geo       = new THREE.BufferGeometry();
-    const positions = this._sampleSphere(PARTICLE_COUNT);
-    const targets   = this._sampleHeart(PARTICLE_COUNT);
-    const sizes     = new Float32Array(PARTICLE_COUNT);
-    const seeds     = new Float32Array(PARTICLE_COUNT * 3);
+    // Two concentric shells: inner (bass-anchored core) + outer (flow-driven envelope).
+    // Inner: 55% of particles, radii 18–36. Outer: 45%, radii 44–66.
+    const INNER = Math.floor(PARTICLE_COUNT * 0.55);
+    const OUTER = PARTICLE_COUNT - INNER;
+
+    const innerPos = this._sampleSphereRange(INNER, 18, 36);
+    const outerPos = this._sampleSphereRange(OUTER, 44, 66);
+    const positions = new Float32Array(PARTICLE_COUNT * 3);
+    positions.set(innerPos, 0);
+    positions.set(outerPos, INNER * 3);
+
+    // Heart targets: inner shell morphs to a tighter heart, outer to a larger one.
+    const innerTgt = this._sampleHeart(INNER, 26);
+    const outerTgt = this._sampleHeart(OUTER, 46);
+    const targets  = new Float32Array(PARTICLE_COUNT * 3);
+    targets.set(innerTgt, 0);
+    targets.set(outerTgt, INNER * 3);
+
+    const geo    = new THREE.BufferGeometry();
+    const sizes  = new Float32Array(PARTICLE_COUNT);
+    const seeds  = new Float32Array(PARTICLE_COUNT * 3);
+    const layers = new Float32Array(PARTICLE_COUNT);
 
     for (let i = 0; i < PARTICLE_COUNT; i++) {
       sizes[i]         = 0.8 + Math.random() * 2.4;
       seeds[i * 3]     = (Math.random() - 0.5) * 2;
       seeds[i * 3 + 1] = (Math.random() - 0.5) * 2;
       seeds[i * 3 + 2] = (Math.random() - 0.5) * 2;
+      layers[i]        = i < INNER ? 0.0 : 1.0;
     }
 
     geo.setAttribute("position",        new THREE.BufferAttribute(positions, 3));
     geo.setAttribute("aPositionTarget", new THREE.BufferAttribute(targets,   3));
     geo.setAttribute("aSize",           new THREE.BufferAttribute(sizes,     1));
     geo.setAttribute("aSeed",           new THREE.BufferAttribute(seeds,     3));
+    geo.setAttribute("aLayer",          new THREE.BufferAttribute(layers,    1));
 
     const mat = new THREE.ShaderMaterial({
       uniforms: {
@@ -436,6 +463,7 @@ export class Visualizer {
         uSizeMax:      { value: 1.72 },
         uSizeCurve:    { value: 2.65 },
         uShapeMix:     { value: 0.29 },   // 0 = sphere, 1 = heart
+        uFlowStrength: { value: 1.0  },   // curl-noise amplitude multiplier
       },
       vertexShader,
       fragmentShader,
