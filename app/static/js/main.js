@@ -25,6 +25,67 @@ const npCard   = document.getElementById("now-playing");
 const npArt    = document.getElementById("np-art");
 const npTrack  = document.getElementById("np-track");
 const npArtist = document.getElementById("np-artist");
+
+// ── custom cursor ────────────────────────────────────────────
+const cursorEl   = document.getElementById("cursor");
+const cursorRing = document.getElementById("cursor-ring");
+let _cursorBeatTimer = 0;
+
+document.addEventListener("mousemove", (e) => {
+  cursorEl.style.transform = `translate(${e.clientX}px, ${e.clientY}px)`;
+});
+document.addEventListener("mouseleave", () => { cursorEl.style.opacity = "0"; });
+document.addEventListener("mouseenter", () => { cursorEl.style.opacity = "1"; });
+
+function pulseCursor() {
+  cursorRing.classList.add("cursor-beat");
+  clearTimeout(_cursorBeatTimer);
+  _cursorBeatTimer = setTimeout(() => cursorRing.classList.remove("cursor-beat"), 280);
+}
+
+// ── favicon animation ────────────────────────────────────────
+const _favCanvas = document.createElement("canvas");
+_favCanvas.width = 32; _favCanvas.height = 32;
+const _favCtx  = _favCanvas.getContext("2d");
+const _favLink = document.querySelector("link[rel='icon']");
+let _favPulse  = 0;
+let _favFrame  = 0;
+
+function drawFavicon(beat) {
+  if (beat) _favPulse = 1;
+  else _favPulse *= 0.82;
+  _favFrame++;
+  // Only redraw when something is happening (skip idle frames)
+  if (!beat && _favPulse < 0.01 && _favFrame % 30 !== 0) return;
+
+  const ctx = _favCtx;
+  const size = 32;
+  ctx.clearRect(0, 0, size, size);
+
+  // Background
+  ctx.fillStyle = "#0a001e";
+  ctx.beginPath();
+  ctx.roundRect(0, 0, size, size, 5);
+  ctx.fill();
+
+  // Outer glow
+  const r = 5 + _favPulse * 8;
+  const glow = ctx.createRadialGradient(16, 16, 0, 16, 16, r * 2.8);
+  glow.addColorStop(0, `rgba(0,240,255,${0.5 + _favPulse * 0.5})`);
+  glow.addColorStop(1, "rgba(0,240,255,0)");
+  ctx.beginPath();
+  ctx.arc(16, 16, r * 2.8, 0, Math.PI * 2);
+  ctx.fillStyle = glow;
+  ctx.fill();
+
+  // Core dot
+  ctx.beginPath();
+  ctx.arc(16, 16, r, 0, Math.PI * 2);
+  ctx.fillStyle = `rgba(0,240,255,${0.75 + _favPulse * 0.25})`;
+  ctx.fill();
+
+  if (_favLink) _favLink.href = _favCanvas.toDataURL();
+}
 const zoomInBtn   = document.getElementById("zoom-in-btn");
 const zoomOutBtn  = document.getElementById("zoom-out-btn");
 const zoomValue   = document.getElementById("zoom-value");
@@ -331,6 +392,8 @@ function frame() {
     freqDataR: audio.rawFreqR(),
   };
   viz.render(bands, audio.rawFreq(), beat, stereo);
+  if (beat) pulseCursor();
+  drawFavicon(beat);
   requestAnimationFrame(frame);
 }
 
