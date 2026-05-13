@@ -7,9 +7,6 @@ const fileInput = document.getElementById("file-input");
 const sourceLabel = document.getElementById("source-label");
 const playBtn = document.getElementById("play-btn");
 const stopBtn = document.getElementById("stop-btn");
-const bassBar = document.getElementById("bass-bar");
-const midBar = document.getElementById("mid-bar");
-const trebleBar = document.getElementById("treble-bar");
 const errorToast = document.getElementById("error-toast");
 const mobileNotice = document.getElementById("mobile-notice");
 const mobileDismiss = document.getElementById("mobile-dismiss");
@@ -105,9 +102,6 @@ stopBtn.addEventListener("click", async () => {
 function frame() {
   const bands = audio.bands();
   viz.render(bands, audio.rawFreq(), audio.beat());
-  bassBar.style.width = `${Math.min(100, bands.bass * 100).toFixed(0)}%`;
-  midBar.style.width = `${Math.min(100, bands.mid * 100).toFixed(0)}%`;
-  trebleBar.style.width = `${Math.min(100, bands.treble * 100).toFixed(0)}%`;
   requestAnimationFrame(frame);
 }
 
