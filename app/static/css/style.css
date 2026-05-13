@@ -1742,3 +1742,231 @@ body.ui-hidden #ui-hide-btn {
   box-shadow: 0 0 5px var(--neon-cyan);
   will-change: transform, opacity;
 }
+
+/* ─── Phone mode (.is-phone on body) ─────────────────────────────────────
+   Activated by detectPhone() in main.js. Hides desktop-only chrome, centers
+   the nameplate, exposes the stripped-down mobile panel, and locks the mic
+   as the only audio source. All overrides are additive — nothing in the
+   desktop layout is structurally removed.
+   ──────────────────────────────────────────────────────────────────────── */
+
+/* Desktop-only UI elements — gone on phone */
+.is-phone #lower-left        { display: none !important; }
+.is-phone #tuning-panel      { display: none !important; }
+.is-phone #help-btn          { display: none !important; }
+.is-phone #help-tooltip      { display: none !important; }
+.is-phone #cast-btn          { display: none !important; }
+.is-phone #cast-tooltip      { display: none !important; }
+.is-phone #mobile-notice     { display: none !important; }
+.is-phone #now-playing       { display: none !important; }
+.is-phone #spotify-tooltip   { display: none !important; }
+.is-phone #cursor            { display: none !important; }
+.is-phone .cursor-trail      { display: none !important; }
+
+/* Status bar — source label + stop only; hide audio sliders and play button */
+.is-phone #audio-controls    { display: none !important; }
+.is-phone #play-btn          { display: none !important; }
+
+/* Source picker — mic only */
+.is-phone .src-btn[data-src="system"]  { display: none !important; }
+.is-phone .src-btn[data-src="spotify"] { display: none !important; }
+.is-phone .src-btn.file-btn            { display: none !important; }
+
+/* Mic button — original size is fine for a single centered button */
+.is-phone .src-btn {
+  width: 200px;
+}
+
+/* Nameplate — pulled out of #hud flow and centered at the top */
+.is-phone #header-card {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  text-align: center;
+}
+
+/* Hide UI button — centered below nameplate, always visible on phone */
+#mobile-hide-btn {
+  display: none;
+}
+
+.is-phone #mobile-hide-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  position: fixed;
+  top: 108px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 160px;
+  height: 32px;
+  appearance: none;
+  background: rgba(10, 0, 30, 0.75);
+  border: 1px solid rgba(0, 240, 255, 0.3);
+  border-radius: 4px;
+  color: rgba(0, 240, 255, 0.65);
+  font-family: "Orbitron", monospace;
+  font-weight: 700;
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  cursor: pointer;
+  z-index: 20;
+  box-shadow: 0 0 14px rgba(0, 240, 255, 0.08);
+  transition: color 140ms ease, border-color 140ms ease, box-shadow 140ms ease;
+}
+
+.is-phone #mobile-hide-btn:active {
+  color: var(--neon-cyan);
+  border-color: rgba(0, 240, 255, 0.6);
+  box-shadow: 0 0 18px rgba(0, 240, 255, 0.2);
+}
+
+/* CTA — subtle dim text just above the mobile panel */
+#mobile-cta {
+  display: none;
+}
+
+.is-phone #mobile-cta {
+  display: block;
+  position: fixed;
+  bottom: calc(278px + env(safe-area-inset-bottom, 0px));
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: "Share Tech Mono", monospace;
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: rgba(0, 240, 255, 0.28);
+  text-shadow: 0 0 10px rgba(0, 240, 255, 0.15);
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 10;
+}
+
+/* Mobile control panel — presets + palettes in scrollable rows */
+#mobile-panel {
+  display: none;
+}
+
+.is-phone #mobile-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  position: fixed;
+  bottom: calc(190px + env(safe-area-inset-bottom, 0px));
+  left: 50%;
+  transform: translateX(-50%);
+  width: calc(100vw - 32px);
+  max-width: 420px;
+  background: rgba(10, 0, 30, 0.88);
+  border: 1px solid rgba(0, 240, 255, 0.18);
+  border-radius: 4px;
+  padding: 10px 12px;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 0 24px rgba(0, 240, 255, 0.07);
+  z-index: 10;
+}
+
+.mobile-panel-row {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.mobile-panel-row::-webkit-scrollbar { display: none; }
+
+/* Compact touch targets — slightly bigger than desktop but not chunky */
+.is-phone .preset-btn,
+.is-phone .palette-btn {
+  padding: 4px 10px;
+  font-size: 9px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* Actions row — reset + zoom */
+.mobile-panel-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 3px;
+  border-top: 1px solid rgba(165, 102, 255, 0.12);
+}
+
+#mobile-reset-btn {
+  appearance: none;
+  background: transparent;
+  border: none;
+  color: rgba(246, 214, 255, 0.35);
+  font-family: "Orbitron", monospace;
+  font-weight: 700;
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  cursor: pointer;
+  padding: 4px 0;
+  transition: color 140ms ease;
+}
+#mobile-reset-btn:active { color: rgba(246, 214, 255, 0.7); }
+
+.mobile-zoom-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mobile-zoom-label {
+  font-family: "Orbitron", monospace;
+  font-weight: 700;
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(0, 240, 255, 0.35);
+}
+
+#mobile-zoom-in,
+#mobile-zoom-out {
+  appearance: none;
+  background: rgba(0, 240, 255, 0.05);
+  border: 1px solid rgba(0, 240, 255, 0.25);
+  border-radius: 3px;
+  color: var(--neon-cyan);
+  font-family: "Orbitron", monospace;
+  font-weight: 700;
+  font-size: 14px;
+  width: 28px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 140ms ease, box-shadow 140ms ease;
+}
+#mobile-zoom-in:active,
+#mobile-zoom-out:active {
+  background: rgba(0, 240, 255, 0.18);
+  box-shadow: 0 0 10px rgba(0, 240, 255, 0.3);
+}
+
+/* Source picker and status bar — account for iOS safe area */
+.is-phone #source-picker {
+  bottom: calc(116px + env(safe-area-inset-bottom, 0px));
+}
+
+.is-phone #status-bar {
+  bottom: calc(44px + env(safe-area-inset-bottom, 0px));
+}
+
+/* Hidden UI mode — panel/CTA/picker/status collapse; hide button stays */
+body.mobile-ui-hidden.is-phone #mobile-panel   { display: none !important; }
+body.mobile-ui-hidden.is-phone #mobile-cta     { display: none !important; }
+body.mobile-ui-hidden.is-phone #source-picker  { display: none !important; }
+body.mobile-ui-hidden.is-phone #status-bar     { display: none !important; }
