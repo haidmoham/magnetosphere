@@ -182,8 +182,10 @@ const tuningPanel  = document.getElementById("tuning-panel");
 const tuningToggle = document.getElementById("tuning-toggle");
 const tuningReset  = document.getElementById("tuning-reset");
 const TUNING_COLLAPSED_KEY = "voidpulse.tuning.collapsed";
-if (localStorage.getItem(TUNING_COLLAPSED_KEY) === "1") {
-  tuningPanel.classList.add("collapsed");
+// Panel starts collapsed (set via HTML class). Only expand if the user has
+// explicitly opened it in a previous session.
+if (localStorage.getItem(TUNING_COLLAPSED_KEY) === "0") {
+  tuningPanel.classList.remove("collapsed");
 }
 tuningToggle.addEventListener("click", () => {
   tuningPanel.classList.toggle("collapsed");
