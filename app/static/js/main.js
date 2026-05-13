@@ -105,7 +105,8 @@ const TUNING_KEY = "voidpulse.tuning.v1";
 const savedTuning = JSON.parse(localStorage.getItem(TUNING_KEY) || "{}");
 
 document.querySelectorAll("#tuning-panel input[type=range]").forEach((input) => {
-  const valEl = input.parentElement.querySelector(".slider-val");
+  const valEl   = input.parentElement.querySelector(".slider-val");
+  const label   = input.parentElement.querySelector("label");
   const uniform = input.dataset.uniform;
 
   // Restore from localStorage on load
@@ -120,6 +121,17 @@ document.querySelectorAll("#tuning-panel input[type=range]").forEach((input) => 
     valEl.textContent = v.toFixed(2);
     viz.setTuning(uniform, v);
     savedTuning[uniform] = v;
+    localStorage.setItem(TUNING_KEY, JSON.stringify(savedTuning));
+  });
+
+  // Click the label to reset just that one slider to its HTML default.
+  label.title = "click to reset";
+  label.addEventListener("click", () => {
+    const def = parseFloat(input.defaultValue);
+    input.value = def;
+    valEl.textContent = def.toFixed(2);
+    viz.setTuning(uniform, def);
+    delete savedTuning[uniform];
     localStorage.setItem(TUNING_KEY, JSON.stringify(savedTuning));
   });
 });

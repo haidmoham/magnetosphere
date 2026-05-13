@@ -367,6 +367,24 @@ body::after {
   letter-spacing: 0.05em;
 }
 
+.slider-row label {
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  padding: 1px 2px;
+  border-radius: 2px;
+  transition: color 120ms ease, text-shadow 120ms ease, transform 80ms ease;
+}
+.slider-row label:hover {
+  color: var(--text-soft);
+  text-shadow: 0 0 5px rgba(0, 240, 255, 0.35);
+}
+.slider-row label:active {
+  color: var(--neon-cyan);
+  text-shadow: 0 0 6px rgba(0, 240, 255, 0.7);
+  transform: translateY(1px);
+}
+
 .slider-row input[type=range] {
   appearance: none;
   -webkit-appearance: none;
