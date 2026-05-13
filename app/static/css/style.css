@@ -274,6 +274,8 @@ body::after {
   gap: 8px;
   box-shadow: 0 0 22px rgba(165, 102, 255, 0.15);
   z-index: 15;
+  transform: scale(0.85);
+  transform-origin: top right;
 }
 
 .tuning-header {

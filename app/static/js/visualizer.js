@@ -156,11 +156,11 @@ export class Visualizer {
     this._lastBurstT    = -Infinity;
 
     // Color entropy params (e* prefix).
-    this.eCycleSpeed = 0.014;  // base hue drift rate (hue units/sec)
-    this.eBassHue    = 0.22;   // bass energy → outer hue shift
+    this.eCycleSpeed = 0.05;   // base hue drift rate (hue units/sec)
+    this.eBassHue    = 0.50;   // bass energy → outer hue shift
     this.eTrebleHue  = 0.10;   // treble energy → inner hue shift
-    this.eSatReact   = 0.45;   // treble → saturation + lightness reactivity
-    this.eBurstHue   = 0.18;   // burst event → instant chromatic flash (inner/outer diverge)
+    this.eSatReact   = 0.30;   // treble → saturation + lightness reactivity
+    this.eBurstHue   = 0.50;   // burst event → instant chromatic flash (inner/outer diverge)
 
     // Floor tuning (live-editable via setTuning).
     Object.assign(this, FLOOR_DEFAULTS);
