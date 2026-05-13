@@ -173,75 +173,56 @@ def logout():
 # chain on the backend so the frontend only sees one clean response.
 
 # ── Demo tracks ──────────────────────────────────────────────────────────────
-# Three 30-second preview snippets served to mobile visitors. Fetched via
-# Spotify client credentials (no user login required) and cached for 24h so
-# the server isn't hammered on every mobile page load.
+# Three 30-second preview snippets served to mobile visitors. Fetched via the
+# iTunes Search API (no auth required, always returns preview URLs) and cached
+# for 24h. Spotify's preview_url was deprecated for new apps post-2024.
 
-_demos_cache: dict = {}          # { tracks: [...], fetched_at: float }
-_DEMOS_TTL   = 86_400            # 24 hours
+_demos_cache: dict = {}   # { tracks: [...], fetched_at: float }
+_DEMOS_TTL   = 86_400     # 24 hours
 
-# Search queries: (track title, artist hint). Freeform search — no IDs needed.
 _DEMO_SEARCHES = [
-    ("This Modern Love",        "Bloc Party"),
-    ("Balam Pichkari",          "Shalmali Kholgade"),
-    ("I Drift Out Then Return", "Small Town Kid"),
+    "Bloc Party This Modern Love",
+    "Balam Pichkari Shalmali Kholgade",
+    "Small Town Kid I Drift Out Then Return",
 ]
+
+ITUNES_SEARCH = "https://itunes.apple.com/search"
 
 
 @spotify_bp.route("/demos")
 def demos():
-    """Return metadata + preview URLs for the three demo tracks.
-    Uses client credentials — no user authentication required."""
+    """Return metadata + 30-second preview URLs for the three demo tracks.
+    Uses the iTunes Search API — no authentication required."""
     import time as _time
     now = _time.time()
 
-    # Serve from cache if still fresh.
     if _demos_cache.get("fetched_at", 0) + _DEMOS_TTL > now:
         return jsonify(_demos_cache["tracks"])
 
-    client_id, client_secret = _client_creds()
-    if not client_id:
-        return jsonify({"error": "not_configured"}), 503
-
-    # App-level token (client credentials — no user scope needed).
-    r = requests.post(
-        SPOTIFY_TOKEN_URL,
-        data={"grant_type": "client_credentials"},
-        auth=(client_id, client_secret),
-        timeout=10,
-    )
-    if not r.ok:
-        return jsonify({"error": "token_failed", "detail": r.text}), 502
-
-    token = r.json()["access_token"]
-    headers = {"Authorization": f"Bearer {token}"}
     tracks = []
-
-    for title, artist in _DEMO_SEARCHES:
+    for query in _DEMO_SEARCHES:
         try:
-            sr = requests.get(
-                "https://api.spotify.com/v1/search",
-                params={"q": f"track:{title} artist:{artist}", "type": "track", "limit": 1},
-                headers=headers,
+            r = requests.get(
+                ITUNES_SEARCH,
+                params={"term": query, "entity": "song", "limit": 1, "country": "US"},
                 timeout=8,
             )
-            if not sr.ok:
+            if not r.ok:
                 continue
-            items = sr.json().get("tracks", {}).get("items", [])
-            if not items:
+            results = r.json().get("results", [])
+            if not results:
                 continue
-            item = items[0]
-            preview = item.get("preview_url")
+            item = results[0]
+            preview = item.get("previewUrl")
             if not preview:
-                continue          # skip tracks Spotify won't preview
-            imgs = item["album"].get("images", [])
-            art  = imgs[1]["url"] if len(imgs) > 1 else (imgs[0]["url"] if imgs else None)
+                continue
+            # artworkUrl100 → swap to 300×300 for card display
+            art = item.get("artworkUrl100", "").replace("100x100", "300x300")
             tracks.append({
-                "title":       item["name"],
-                "artist":      ", ".join(a["name"] for a in item["artists"]),
+                "title":       item.get("trackName", ""),
+                "artist":      item.get("artistName", ""),
                 "preview_url": preview,
                 "art_url":     art,
-                "spotify_id":  item["id"],
             })
         except requests.RequestException:
             continue
