@@ -1130,5 +1130,43 @@ document.addEventListener("click", () => {
   spotifyTooltip.hidden = true;
 });
 
+// ── Mobile-only interactions ────────────────────────────────────────────
+if (IS_PHONE) {
+  // Pinch-to-zoom: two-finger spread/pinch maps to camera Z.
+  let _pinchDist0 = 0;
+  let _pinchZoom0 = currentZoom;
+  canvas.addEventListener("touchstart", (e) => {
+    if (e.touches.length === 2) {
+      const dx = e.touches[0].clientX - e.touches[1].clientX;
+      const dy = e.touches[0].clientY - e.touches[1].clientY;
+      _pinchDist0 = Math.hypot(dx, dy);
+      _pinchZoom0 = currentZoom;
+    }
+  }, { passive: true });
+  canvas.addEventListener("touchmove", (e) => {
+    if (e.touches.length !== 2 || _pinchDist0 < 10) return;
+    const dx   = e.touches[0].clientX - e.touches[1].clientX;
+    const dy   = e.touches[0].clientY - e.touches[1].clientY;
+    const dist = Math.hypot(dx, dy);
+    // Spread = zoom in (smaller Z), pinch = zoom out (larger Z). Power <1 softens.
+    currentZoom = Math.max(viz.zoomMin, Math.min(viz.zoomMax,
+      _pinchZoom0 * Math.pow(_pinchDist0 / dist, 0.7)));
+    applyZoom();
+  }, { passive: true });
+
+  // Hide UI toggle — collapses panel/CTA/picker/status; button itself stays visible.
+  const mobileHideBtn = document.getElementById("mobile-hide-btn");
+  mobileHideBtn.addEventListener("click", () => {
+    const hidden = document.body.classList.toggle("mobile-ui-hidden");
+    mobileHideBtn.textContent = hidden ? "⊕" : "⊘";
+  });
+
+  // Reset — sliders back to HTML defaults, shape stays heart.
+  document.getElementById("mobile-reset-btn").addEventListener("click", () => {
+    tuningReset.click();
+    applyShape("heart", false);
+  });
+}
+
 refreshUi();
 requestAnimationFrame(frame);

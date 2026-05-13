@@ -1772,10 +1772,9 @@ body.ui-hidden #ui-hide-btn {
 .is-phone .src-btn[data-src="spotify"] { display: none !important; }
 .is-phone .src-btn.file-btn            { display: none !important; }
 
-/* Bigger tap target for the lone mic button */
+/* Mic button — original size is fine for a single centered button */
 .is-phone .src-btn {
-  width: 220px;
-  padding: 16px 20px;
+  width: 200px;
 }
 
 /* Nameplate — pulled out of #hud flow and centered at the top */
@@ -1787,6 +1786,39 @@ body.ui-hidden #ui-hide-btn {
   text-align: center;
 }
 
+/* Hide UI button — persistent top-right corner; always visible on phone */
+#mobile-hide-btn {
+  display: none;
+}
+
+.is-phone #mobile-hide-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: fixed;
+  top: 18px;
+  right: 16px;
+  width: 30px;
+  height: 30px;
+  appearance: none;
+  background: rgba(10, 0, 30, 0.7);
+  border: 1px solid rgba(0, 240, 255, 0.2);
+  border-radius: 4px;
+  color: rgba(0, 240, 255, 0.55);
+  font-family: "Orbitron", monospace;
+  font-size: 12px;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  cursor: pointer;
+  z-index: 20;
+  transition: color 140ms ease, border-color 140ms ease;
+}
+
+.is-phone #mobile-hide-btn:active {
+  color: var(--neon-cyan);
+  border-color: rgba(0, 240, 255, 0.5);
+}
+
 /* CTA — subtle dim text, just above the mobile panel */
 #mobile-cta {
   display: none;
@@ -1795,15 +1827,15 @@ body.ui-hidden #ui-hide-btn {
 .is-phone #mobile-cta {
   display: block;
   position: fixed;
-  bottom: 258px;
+  bottom: 248px;
   left: 50%;
   transform: translateX(-50%);
   font-family: "Share Tech Mono", monospace;
-  font-size: 11px;
+  font-size: 10px;
   letter-spacing: 0.2em;
   text-transform: uppercase;
-  color: rgba(0, 240, 255, 0.32);
-  text-shadow: 0 0 10px rgba(0, 240, 255, 0.18);
+  color: rgba(0, 240, 255, 0.28);
+  text-shadow: 0 0 10px rgba(0, 240, 255, 0.15);
   white-space: nowrap;
   pointer-events: none;
   z-index: 10;
@@ -1817,9 +1849,9 @@ body.ui-hidden #ui-hide-btn {
 .is-phone #mobile-panel {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 7px;
   position: fixed;
-  bottom: 172px;
+  bottom: 164px;
   left: 50%;
   transform: translateX(-50%);
   width: calc(100vw - 32px);
@@ -1827,7 +1859,7 @@ body.ui-hidden #ui-hide-btn {
   background: rgba(10, 0, 30, 0.88);
   border: 1px solid rgba(0, 240, 255, 0.18);
   border-radius: 4px;
-  padding: 12px 14px;
+  padding: 9px 11px;
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   box-shadow: 0 0 24px rgba(0, 240, 255, 0.07);
@@ -1836,7 +1868,7 @@ body.ui-hidden #ui-hide-btn {
 
 .mobile-panel-row {
   display: flex;
-  gap: 7px;
+  gap: 6px;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
@@ -1844,11 +1876,42 @@ body.ui-hidden #ui-hide-btn {
 
 .mobile-panel-row::-webkit-scrollbar { display: none; }
 
-/* Slightly larger touch targets for mobile chips */
+/* Compact touch targets — slightly bigger than desktop but not chunky */
 .is-phone .preset-btn,
 .is-phone .palette-btn {
-  padding: 6px 14px;
-  font-size: 10px;
+  padding: 4px 10px;
+  font-size: 9px;
   white-space: nowrap;
   flex-shrink: 0;
 }
+
+/* Actions row — reset button */
+.mobile-panel-actions {
+  display: flex;
+  gap: 6px;
+  padding-top: 2px;
+  border-top: 1px solid rgba(165, 102, 255, 0.12);
+}
+
+#mobile-reset-btn {
+  appearance: none;
+  background: transparent;
+  border: none;
+  color: rgba(246, 214, 255, 0.35);
+  font-family: "Orbitron", monospace;
+  font-weight: 700;
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  cursor: pointer;
+  padding: 3px 0;
+  transition: color 140ms ease;
+}
+
+#mobile-reset-btn:active { color: rgba(246, 214, 255, 0.7); }
+
+/* Hidden UI mode — panel/CTA/picker/status collapse; hide button stays */
+body.mobile-ui-hidden.is-phone #mobile-panel   { display: none !important; }
+body.mobile-ui-hidden.is-phone #mobile-cta     { display: none !important; }
+body.mobile-ui-hidden.is-phone #source-picker  { display: none !important; }
+body.mobile-ui-hidden.is-phone #status-bar     { display: none !important; }
