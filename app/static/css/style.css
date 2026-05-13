@@ -144,6 +144,20 @@ body::after {
 
 #hud > * { pointer-events: auto; }
 
+/* ─── header card (title + credit) ──────────────────────────── */
+#header-card {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 6px;
+  background: rgba(10, 0, 30, 0.7);
+  border: 1px solid rgba(0, 240, 255, 0.25);
+  border-radius: 4px;
+  padding: 10px 16px;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  box-shadow: 0 0 18px rgba(0, 240, 255, 0.08);
+}
+
 /* ─── title ─────────────────────────────────────────────────── */
 #title {
   font-family: "Orbitron", "Share Tech Mono", monospace;
@@ -171,16 +185,12 @@ body::after {
 }
 
 #credit {
-  margin-top: 6px;
   font-family: "Share Tech Mono", monospace;
   font-size: 9px;
   letter-spacing: 0.18em;
   text-transform: uppercase;
   color: var(--text-dim);
-  opacity: 0.55;
-  transition: opacity 200ms ease;
 }
-#credit:hover { opacity: 1; }
 #credit .credit-sep { opacity: 0.5; margin: 0 4px; }
 #credit a {
   color: var(--neon-cyan);
