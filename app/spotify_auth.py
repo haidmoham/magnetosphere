@@ -24,18 +24,17 @@ spotify_bp = Blueprint("spotify", __name__, url_prefix="/auth/spotify")
 SPOTIFY_AUTH_URL  = "https://accounts.spotify.com/authorize"
 SPOTIFY_TOKEN_URL = "https://accounts.spotify.com/api/token"
 
-# Scopes:
-#   streaming                     — required for Web Playback SDK
-#   user-read-email/private       — required by SDK init
-#   user-read-playback-state      — read currently playing track + position
-#   user-modify-playback-state    — transfer playback to this device
-SCOPES = " ".join([
-    "streaming",
-    "user-read-email",
-    "user-read-private",
-    "user-read-playback-state",
-    "user-modify-playback-state",
-])
+# Listening-along flow: we don't play audio in the browser. We just watch what's
+# playing on the user's account (any device) and fetch the per-track audio
+# analysis to drive the visualizer. Single scope is enough.
+#
+#   user-read-playback-state  — read currently playing track + position +
+#                               play/pause state on whichever device the user
+#                               is actually listening on
+#
+# Notably absent: `streaming` (Premium-only, was for the Web Playback SDK).
+# This flow now works for free Spotify accounts.
+SCOPES = "user-read-playback-state"
 
 
 def _client_creds():
