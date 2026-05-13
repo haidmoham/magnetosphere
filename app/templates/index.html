@@ -49,6 +49,25 @@
     </div>
   </div>
 
+  <!-- Mobile demo picker — full-screen intro shown on touch devices.
+       Populated by /auth/spotify/demos (client credentials, no user login). -->
+  <div id="mobile-demo" hidden>
+    <div class="md-inner">
+      <div class="md-header">
+        <div class="md-wordmark">VOIDPULSE</div>
+        <div class="md-sub">tap a track to start</div>
+      </div>
+      <div id="md-tracks" class="md-tracks">
+        <div class="md-loading">
+          <span class="md-loading-dot"></span>
+          <span class="md-loading-dot"></span>
+          <span class="md-loading-dot"></span>
+        </div>
+      </div>
+      <button id="md-skip">use mic instead</button>
+    </div>
+  </div>
+
   <canvas id="stage"></canvas>
 
   <div id="mobile-notice">
