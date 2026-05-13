@@ -155,6 +155,13 @@ export class Visualizer {
     this.cBurstInterval = 2.5; // minimum seconds between bursts
     this._lastBurstT    = -Infinity;
 
+    // Color entropy params (e* prefix).
+    this.eCycleSpeed = 0.014;  // base hue drift rate (hue units/sec)
+    this.eBassHue    = 0.22;   // bass energy → outer hue shift
+    this.eTrebleHue  = 0.10;   // treble energy → inner hue shift
+    this.eSatReact   = 0.45;   // treble → saturation + lightness reactivity
+    this.eBurstHue   = 0.18;   // burst event → instant chromatic flash (inner/outer diverge)
+
     // Floor tuning (live-editable via setTuning).
     Object.assign(this, FLOOR_DEFAULTS);
 
@@ -352,14 +359,18 @@ export class Visualizer {
 
   // ── Colours ──────────────────────────────────────────────────────────────
 
-  _updateColors(bands, t) {
-    const cycle = (t * 0.014) % 1.0;
+  _updateColors(bands, t, burst) {
+    const cycle = (t * this.eCycleSpeed) % 1.0;
 
-    const iH = (BASE_INNER_H + cycle - bands.treble * 0.06 + 1.0) % 1.0;
-    const iS = 1.0 - bands.treble * 0.45;
-    const iL = 0.50 + bands.treble * 0.45;
+    // On a burst: inner and outer hues diverge in opposite directions,
+    // creating a chromatic flash that decays with the burst envelope.
+    const burstShift = burst * this.eBurstHue;
 
-    const oH = (BASE_OUTER_H + cycle + bands.bass * 0.18) % 1.0;
+    const iH = (BASE_INNER_H + cycle - bands.treble * this.eTrebleHue - burstShift + 1.0) % 1.0;
+    const iS = 1.0 - bands.treble * this.eSatReact;
+    const iL = 0.50 + bands.treble * this.eSatReact;
+
+    const oH = (BASE_OUTER_H + cycle + bands.bass * this.eBassHue + burstShift) % 1.0;
     const oL = 0.45 + bands.bass * 0.42;
 
     this._cInner.setHSL(iH, iS, iL);
@@ -408,7 +419,7 @@ export class Visualizer {
     u.uEcho.value    *= 0.82;
     u.uScatter.value *= 0.945;
 
-    this._updateColors(bands, t);
+    this._updateColors(bands, t, u.uBurst.value);
     this._updateGrid(freqData);
 
     this.particles.rotation.y += dt * (0.06 + bands.bass * 0.46);
@@ -433,7 +444,7 @@ export class Visualizer {
     if (name.startsWith("u")) {
       const u = this.particles.material.uniforms;
       if (u[name]) u[name].value = value;
-    } else if (name.startsWith("f") || name.startsWith("c")) {
+    } else if (name.startsWith("f") || name.startsWith("c") || name.startsWith("e")) {
       if (name in this) this[name] = value;
     } else if (name.startsWith("b") && this.bloom) {
       const map = { bStrength: "strength", bRadius: "radius", bThreshold: "threshold" };
