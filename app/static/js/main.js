@@ -487,6 +487,7 @@ document.querySelectorAll("#tuning-panel .section-random").forEach((btn) => {
 const tuningRandom = document.getElementById("tuning-random");
 tuningRandom.addEventListener("click", () => {
   document.querySelectorAll("#tuning-panel input[type=range]").forEach(randomizeSlider);
+  randomizeSlider(sensSlider);
   const palettes = ["synthwave", "inferno", "arctic", "toxic", "void", "ember"];
   applyPalette(palettes[Math.floor(Math.random() * palettes.length)]);
   const shapes = ["sphere", "heart", "torus", "galaxy", "cube", "helix"];
