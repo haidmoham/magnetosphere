@@ -82,27 +82,25 @@ Smoothing is asymmetric: snap up fast on hits, decay slow (so a bass kick punche
 
 ## Build Order
 
-### Phase 1 — Particle field that breathes (active)
-- [x] Flask scaffold + Railway config
-- [x] Web Audio: mic, tab audio, file sources
-- [x] three.js 60k-particle sphere with custom shader
-- [x] Bass-driven radial breathing, mid/treble modulation
-- [ ] Verify against reference: open in Chrome, share a tab playing music, confirm reactivity
+### Phase 1 — Particle field that breathes ✓
+- Flask scaffold + Railway config
+- Web Audio: mic, tab audio, file sources
+- three.js 60k-particle sphere with custom shader
+- Bass-driven radial breathing, mid/treble modulation
 
-### Phase 2 — Flow + character
-- [x] 2-octave curl-noise flow field (uFlowStrength uniform, tunable)
-- [x] Inner / outer shells (55% radii 18–36 / 45% radii 44–66, aLayer attribute)
-- [x] Two-envelope onset detector + 8-frame refractory → cleaner beat bursts
+### Phase 2 — Flow + character ✓
+- 2-octave curl-noise flow field (uFlowStrength uniform, tunable)
+- Inner / outer shells (55% radii 18–36 / 45% radii 44–66, aLayer attribute)
+- Two-envelope onset detector + 8-frame refractory → cleaner beat bursts
 
-### Phase 3 — Glow
-- [x] EffectComposer + UnrealBloomPass
-- [x] OutputPass (sRGB + tonemap)
-- [x] Color palette presets (synthwave/inferno/arctic/toxic/void/ember; hue-only swaps)
+### Phase 3 — Glow ✓
+- EffectComposer + UnrealBloomPass
+- OutputPass (sRGB + tonemap)
+- Color palette presets (synthwave/inferno/arctic/toxic/void/ember; hue-only swaps)
 
-### Phase 4 — Magnetosphere proper
-- [x] Audio-reactive attractors (mid orbit speed, bass radius pulse; 0–4 wells tunable)
-- [x] Scene transitions (cinematic mode: 6 named camera scenes + paired palette swaps every 12–20s)
-- [ ] Optional: webcam-based hand interaction
+### Phase 4 — Magnetosphere proper ✓
+- Audio-reactive attractors (mid orbit speed, bass radius pulse; 0–4 wells tunable)
+- Scene transitions (cinematic mode: 6 named camera scenes + paired palette swaps every 12–20s)
 
 ### Phase 5 — Spotify beat-sync (faithful recreation goal)
 The original iTunes Magnetosphere used iTunes' internal playback data — exact beat
@@ -139,16 +137,14 @@ loudness envelopes, tempo, key, time signature, energy, valence.
   estimated playhead this frame.
 - Existing FFT pipeline stays in place for mic / tab / file sources.
 
-**What each Spotify data type drives:**
+**What Spotify drives:**
 | Spotify data | Visualizer event |
 |---|---|
-| Beat timestamps | `uBurst` fires exactly on beat (replaces onset detector) |
-| Segment loudness | Synthesised bass/mid/treble (continuous energy curve) |
-| Bar / downbeat *(todo)* | Cinematic camera cut candidate |
-| Section change *(todo)* | Shape transition + palette swap |
-| Segment pitch vector *(todo)* | Per-frame color entropy modulation |
-| Segment timbre vector *(todo)* | Flow field strength / attractor radius |
-| Track valence + energy *(todo)* | Starting palette selection on load |
+| Beat timestamps (via Essentia) | Phase-lock for BPM pulse grid |
+| Track valence + energy (ReccoBeats) | Auto-palette on track change |
+| Tempo (ReccoBeats) | BPM pulse synth cadence |
+
+Note: bar/section/segment data is unrecoverable — Spotify deprecated `/v1/audio-analysis` for post-Nov-2024 apps.
 
 **Phase 5.1 — OAuth + playback foundation (done; superseded)**
 - [x] Flask OAuth blueprint
