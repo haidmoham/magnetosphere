@@ -503,7 +503,7 @@ body::after {
   gap: 4px;
 }
 
-#tuning-random, #tuning-reset, #tuning-toggle {
+#tuning-random, #tuning-reset, #tuning-toggle, #tuning-details, #tuning-cinema {
   appearance: none;
   background: transparent;
   border: none;
@@ -527,14 +527,32 @@ body::after {
   transition: transform 180ms ease, color 140ms ease, text-shadow 140ms ease;
 }
 
-#tuning-random:hover, #tuning-reset:hover, #tuning-toggle:hover {
+#tuning-random:hover, #tuning-reset:hover, #tuning-toggle:hover, #tuning-details:hover, #tuning-cinema:hover {
   color: var(--neon-cyan);
   text-shadow: 0 0 6px var(--neon-cyan);
 }
-#tuning-random:active, #tuning-reset:active { background: rgba(0, 240, 255, 0.1); }
+#tuning-random:active, #tuning-reset:active, #tuning-details:active, #tuning-cinema:active { background: rgba(0, 240, 255, 0.1); }
+
+/* Cinematic toggle — when on, glows pink to signal "active" state distinct from other action buttons. */
+#tuning-cinema.on {
+  color: var(--neon-pink);
+  text-shadow: 0 0 6px var(--neon-pink), 0 0 12px rgba(255, 61, 240, 0.4);
+}
+#tuning-cinema.on:hover {
+  color: var(--neon-pink);
+  text-shadow: 0 0 8px var(--neon-pink), 0 0 16px rgba(255, 61, 240, 0.6);
+}
 
 #tuning-panel.collapsed #tuning-toggle { transform: rotate(-90deg); }
 #tuning-panel.collapsed .tuning-body   { display: none; }
+
+/* Simple view (default): only chip rows + stereo toggles. Advanced view
+   (#tuning-panel.advanced) reveals the slider body + rand/reset buttons. */
+#tuning-panel:not(.advanced) .tuning-body,
+#tuning-panel:not(.advanced) .tuning-hint,
+#tuning-panel:not(.advanced) .advanced-only {
+  display: none;
+}
 
 .tuning-body {
   display: flex;
@@ -747,6 +765,84 @@ body::after {
   text-shadow: 0 0 6px rgba(0, 240, 255, 0.5);
 }
 .preset-btn:active { transform: translateY(1px); }
+
+/* Color palette chips — same shape as scene presets, but hot-pink themed
+   to communicate "this only swaps colors, not behavior." */
+.tuning-palettes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 6px 0 4px;
+  border-bottom: 1px solid rgba(165, 102, 255, 0.12);
+}
+#tuning-panel.collapsed .tuning-palettes { display: none; }
+
+.palette-btn {
+  appearance: none;
+  background: rgba(255, 61, 240, 0.05);
+  border: 1px solid rgba(255, 61, 240, 0.25);
+  border-radius: 2px;
+  padding: 3px 9px;
+  cursor: pointer;
+  font-family: "Orbitron", monospace;
+  font-weight: 700;
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  text-shadow: 0 0 4px rgba(255, 61, 240, 0.2);
+  transition: background 140ms ease, border-color 140ms ease,
+              color 140ms ease, text-shadow 140ms ease, transform 80ms ease;
+}
+.palette-btn:hover {
+  background: rgba(255, 61, 240, 0.18);
+  border-color: var(--neon-pink);
+  color: var(--neon-pink);
+  text-shadow: 0 0 6px rgba(255, 61, 240, 0.5);
+}
+.palette-btn:active { transform: translateY(1px); }
+
+/* Shape chips — violet-themed to distinguish from cyan presets (behavior)
+   and pink palettes (color). One can be .active at a time. */
+.tuning-shapes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 6px 0 4px;
+  border-bottom: 1px solid rgba(165, 102, 255, 0.12);
+}
+#tuning-panel.collapsed .tuning-shapes { display: none; }
+
+.shape-btn {
+  appearance: none;
+  background: rgba(165, 102, 255, 0.05);
+  border: 1px solid rgba(165, 102, 255, 0.25);
+  border-radius: 2px;
+  padding: 3px 9px;
+  cursor: pointer;
+  font-family: "Orbitron", monospace;
+  font-weight: 700;
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  text-shadow: 0 0 4px rgba(165, 102, 255, 0.2);
+  transition: background 140ms ease, border-color 140ms ease,
+              color 140ms ease, text-shadow 140ms ease, transform 80ms ease;
+}
+.shape-btn:hover {
+  background: rgba(165, 102, 255, 0.18);
+  border-color: var(--neon-violet);
+  color: var(--neon-violet);
+  text-shadow: 0 0 6px rgba(165, 102, 255, 0.5);
+}
+.shape-btn.active {
+  background: rgba(165, 102, 255, 0.22);
+  border-color: var(--neon-violet);
+  color: var(--neon-violet);
+  text-shadow: 0 0 6px rgba(165, 102, 255, 0.7);
+}
+.shape-btn:active { transform: translateY(1px); }
 
 /* User save slots — empty (dashed border, dim) vs filled (solid cyan glow). */
 .tuning-slots {

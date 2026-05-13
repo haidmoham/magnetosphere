@@ -109,9 +109,11 @@
       <div class="tuning-header">
         <span class="tuning-title">tuning</span>
         <div class="tuning-actions">
-          <button id="tuning-random" aria-label="Randomize all values" title="🎲 randomize all">🎲 rand</button>
-          <button id="tuning-reset"  aria-label="Reset all values to defaults">↺ reset</button>
-          <button id="tuning-toggle" aria-label="Collapse tuning panel">▾</button>
+          <button id="tuning-random"  class="advanced-only" aria-label="Randomize all values" title="🎲 randomize all">🎲 rand</button>
+          <button id="tuning-reset"   class="advanced-only" aria-label="Reset all values to defaults">↺ reset</button>
+          <button id="tuning-cinema"  aria-label="Toggle cinematic auto-cuts" title="auto-cycle camera + palette every 12–20s">✨ cinema</button>
+          <button id="tuning-details" aria-label="Show advanced sliders" title="show / hide advanced sliders">▸ advanced</button>
+          <button id="tuning-toggle"  aria-label="Collapse tuning panel">▾</button>
         </div>
       </div>
       <div class="tuning-presets">
@@ -120,6 +122,22 @@
         <button class="preset-btn" data-preset="nebula">nebula</button>
         <button class="preset-btn" data-preset="storm">storm</button>
         <button class="preset-btn" data-preset="vapor">vapor</button>
+      </div>
+      <div class="tuning-palettes">
+        <button class="palette-btn" data-palette="synthwave" title="cyan + hot pink">synthwave</button>
+        <button class="palette-btn" data-palette="inferno"   title="orange + deep red">inferno</button>
+        <button class="palette-btn" data-palette="arctic"    title="cyan + cool blue">arctic</button>
+        <button class="palette-btn" data-palette="toxic"     title="emerald + acid yellow">toxic</button>
+        <button class="palette-btn" data-palette="void"      title="violet + magenta">void</button>
+        <button class="palette-btn" data-palette="ember"     title="amber + crimson">ember</button>
+      </div>
+      <div class="tuning-shapes">
+        <button class="shape-btn active" data-shape="sphere" title="uniform spherical shell">sphere</button>
+        <button class="shape-btn"        data-shape="heart"  title="layered 3D heart">heart</button>
+        <button class="shape-btn"        data-shape="torus"  title="donut ring">torus</button>
+        <button class="shape-btn"        data-shape="galaxy" title="3-arm spiral disk">galaxy</button>
+        <button class="shape-btn"        data-shape="cube"   title="six-face cube">cube</button>
+        <button class="shape-btn"        data-shape="helix"  title="DNA double helix">helix</button>
       </div>
       <div class="tuning-slots">
         <button class="slot-btn" data-slot="1" title="click empty to save · click filled to load · shift+click to overwrite · right-click to clear">slot 1</button>
@@ -189,6 +207,33 @@
             <input type="range" data-uniform="cRotateSpeed" min="0" max="0.5" step="0.01" value="0.14">
             <span class="slider-val">0.14</span>
           </div>
+          <div class="slider-row">
+            <label>flow strength</label>
+            <input type="range" data-uniform="uFlowStrength" min="0" max="3.0" step="0.05" value="1.0">
+            <span class="slider-val">1.00</span>
+          </div>
+        </div>
+
+        <div class="tuning-section">
+          <div class="section-header">
+            <button class="section-label" aria-label="Reset attractor values to defaults">attract</button>
+            <button class="section-random" title="🎲 randomize section" aria-label="Randomize attractor values">🎲</button>
+          </div>
+          <div class="slider-row">
+            <label>count</label>
+            <input type="range" data-uniform="cAttrCount" min="0" max="4" step="1" value="2">
+            <span class="slider-val">2.00</span>
+          </div>
+          <div class="slider-row">
+            <label>strength</label>
+            <input type="range" data-uniform="uAttrStr" min="0" max="20" step="0.5" value="7.5">
+            <span class="slider-val">7.50</span>
+          </div>
+          <div class="slider-row">
+            <label>orbit radius</label>
+            <input type="range" data-uniform="cAttrRadius" min="20" max="120" step="5" value="55">
+            <span class="slider-val">55.00</span>
+          </div>
         </div>
 
         <div class="tuning-section">
@@ -245,22 +290,21 @@
             <span class="slider-val">0.71</span>
           </div>
         </div>
-        <div class="tuning-section">
-          <div class="section-header">
-            <button class="section-label" aria-label="Reset shape values to defaults">shape</button>
-            <button class="section-random" title="🎲 randomize section" aria-label="Randomize shape values">🎲</button>
-          </div>
-          <div class="slider-row">
-            <label>sphere → heart</label>
-            <input type="range" data-uniform="uShapeMix" min="0" max="1" step="0.01" value="0.29">
-            <span class="slider-val">0.29</span>
-          </div>
-        </div>
 
         <div class="tuning-section">
           <div class="section-header">
             <button class="section-label" aria-label="Reset color values to defaults">color</button>
             <button class="section-random" title="🎲 randomize section" aria-label="Randomize color values">🎲</button>
+          </div>
+          <div class="slider-row">
+            <label>inner hue</label>
+            <input type="range" data-uniform="eInnerHue" min="0" max="1" step="0.005" value="0.556">
+            <span class="slider-val">0.56</span>
+          </div>
+          <div class="slider-row">
+            <label>outer hue</label>
+            <input type="range" data-uniform="eOuterHue" min="0" max="1" step="0.005" value="0.840">
+            <span class="slider-val">0.84</span>
           </div>
           <div class="slider-row">
             <label>cycle speed</label>

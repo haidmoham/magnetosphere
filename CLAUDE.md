@@ -90,18 +90,18 @@ Smoothing is asymmetric: snap up fast on hits, decay slow (so a bass kick punche
 - [ ] Verify against reference: open in Chrome, share a tab playing music, confirm reactivity
 
 ### Phase 2 — Flow + character
-- [ ] Curl-noise / flow-field motion (currently just swirl + jitter)
-- [ ] Multiple shells / layers
-- [ ] Beat detection (onset detector on bass envelope) → spawn bursts
+- [x] 2-octave curl-noise flow field (uFlowStrength uniform, tunable)
+- [x] Inner / outer shells (55% radii 18–36 / 45% radii 44–66, aLayer attribute)
+- [x] Two-envelope onset detector + 8-frame refractory → cleaner beat bursts
 
 ### Phase 3 — Glow
-- [ ] EffectComposer + UnrealBloomPass
-- [ ] Tonemapping pass
-- [ ] Color palette presets
+- [x] EffectComposer + UnrealBloomPass
+- [x] OutputPass (sRGB + tonemap)
+- [x] Color palette presets (synthwave/inferno/arctic/toxic/void/ember; hue-only swaps)
 
 ### Phase 4 — Magnetosphere proper
-- [ ] Audio-reactive attractors (mid moves them, bass pulses them)
-- [ ] Scene transitions (camera cuts, palette swaps)
+- [x] Audio-reactive attractors (mid orbit speed, bass radius pulse; 0–4 wells tunable)
+- [x] Scene transitions (cinematic mode: 6 named camera scenes + paired palette swaps every 12–20s)
 - [ ] Optional: webcam-based hand interaction
 
 ---

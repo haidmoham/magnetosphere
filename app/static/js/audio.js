@@ -47,8 +47,10 @@ export class AudioEngine {
     this._smoothed  = { bass: 0, mid: 0, treble: 0 };
     this._smoothedL = { bass: 0, mid: 0, treble: 0 };
     this._smoothedR = { bass: 0, mid: 0, treble: 0 };
-    this._bassEnv  = 0;   // slow envelope for onset detection
-    this._beat     = false;
+    this._bassEnvFast = 0;  // short-window onset envelope  (~4-frame avg)
+    this._bassEnvSlow = 0;  // long-window reference envelope (~20-frame avg)
+    this._beatCd      = 0;  // refractory frame counter
+    this._beat        = false;
   }
 
   _ensureContext() {
@@ -258,9 +260,17 @@ export class AudioEngine {
     this.analyser.getByteFrequencyData(this.freqData);
     const out = this._computeBands(this.freqData, this._smoothed);
 
-    // Onset detection on mono: beat fires when raw bass jumps >25% above envelope.
-    this._bassEnv = this._bassEnv * 0.88 + out._rawBass * 0.12;
-    this._beat = out._rawBass > this._bassEnv * 1.25 && out._rawBass > 0.11;
+    // Two-envelope onset: fires when rawBass spikes above both the recent
+    // (fast) and running (slow) averages — robust to sustained-bass passages.
+    // An 8-frame refractory period prevents re-fire on the same kick.
+    this._bassEnvFast = this._bassEnvFast * 0.78 + out._rawBass * 0.22;
+    this._bassEnvSlow = this._bassEnvSlow * 0.95 + out._rawBass * 0.05;
+    const onset = out._rawBass > this._bassEnvFast * 1.12 &&
+                  out._rawBass > this._bassEnvSlow * 1.20 &&
+                  out._rawBass > 0.08;
+    if (this._beatCd > 0) { this._beatCd--;  this._beat = false; }
+    else if (onset)       { this._beat = true; this._beatCd = 8; }
+    else                  { this._beat = false; }
 
     return { bass: out.bass, mid: out.mid, treble: out.treble };
   }
