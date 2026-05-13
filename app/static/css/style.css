@@ -680,6 +680,63 @@ body::after {
 }
 .preset-btn:active { transform: translateY(1px); }
 
+/* Stereo toggles — three on/off switches under the preset row. */
+.stereo-toggles {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px 0 4px;
+  border-bottom: 1px solid rgba(165, 102, 255, 0.12);
+}
+#tuning-panel.collapsed .stereo-toggles { display: none; }
+
+.stereo-row {
+  display: grid;
+  grid-template-columns: 88px 1fr;
+  align-items: center;
+  gap: 10px;
+}
+
+.stereo-label {
+  font-family: "Share Tech Mono", monospace;
+  font-size: 10px;
+  letter-spacing: 0.05em;
+  color: var(--text-dim);
+}
+
+.stereo-btn {
+  appearance: none;
+  background: rgba(8, 0, 26, 0.6);
+  border: 1px solid rgba(165, 102, 255, 0.25);
+  border-radius: 2px;
+  padding: 3px 8px;
+  cursor: pointer;
+  font-family: "Orbitron", monospace;
+  font-weight: 700;
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  text-shadow: none;
+  width: 100%;
+  transition: background 140ms ease, border-color 140ms ease,
+              color 140ms ease, text-shadow 140ms ease;
+}
+.stereo-btn:hover {
+  border-color: rgba(0, 240, 255, 0.45);
+  color: var(--text-soft);
+}
+.stereo-btn.on {
+  background: rgba(0, 240, 255, 0.12);
+  border-color: var(--neon-cyan);
+  color: var(--neon-cyan);
+  text-shadow: 0 0 6px rgba(0, 240, 255, 0.55);
+}
+.stereo-btn.on:hover {
+  background: rgba(0, 240, 255, 0.2);
+  box-shadow: 0 0 14px rgba(0, 240, 255, 0.35);
+}
+
 /* Disclaimer under the panel header. */
 .tuning-hint {
   font-family: "Share Tech Mono", monospace;

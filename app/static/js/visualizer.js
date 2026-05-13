@@ -37,6 +37,15 @@ const vertexShader = /* glsl */ `
   uniform float uBass;
   uniform float uMid;
   uniform float uTreble;
+  // Per-channel bands — used when uStereoParticles > 0 to drive the left
+  // hemisphere of the cloud from the L channel and right from R.
+  uniform float uBassL;
+  uniform float uMidL;
+  uniform float uTrebleL;
+  uniform float uBassR;
+  uniform float uMidR;
+  uniform float uTrebleR;
+  uniform float uStereoParticles;  // 0 = mono, 1 = full L/R hemisphere split
   uniform float uBurst;
   uniform float uEcho;
   uniform float uScatter;
@@ -69,8 +78,20 @@ const vertexShader = /* glsl */ `
     vec3 basePos = mix(position, aPositionTarget, uShapeMix);
     float r = length(basePos);
 
+    // Per-particle band values: blend mono with the channel matching this
+    // particle's hemisphere (sign of basePos.x). At uStereoParticles=0 every
+    // particle sees the mono bands; at 1.0 the left hemisphere reacts purely
+    // to L, the right to R.
+    float side = step(0.0, basePos.x); // 0 if left, 1 if right
+    float bassChan   = mix(uBassL,   uBassR,   side);
+    float midChan    = mix(uMidL,    uMidR,    side);
+    float trebleChan = mix(uTrebleL, uTrebleR, side);
+    float bassP   = mix(uBass,   bassChan,   uStereoParticles);
+    float midP    = mix(uMid,    midChan,    uStereoParticles);
+    float trebleP = mix(uTreble, trebleChan, uStereoParticles);
+
     // Flow field displacement — scales up with mid energy
-    vec3 pos = basePos + flowField(basePos, uTime) * (2.0 + uMid * 2.5);
+    vec3 pos = basePos + flowField(basePos, uTime) * (2.0 + midP * 2.5);
 
     // Swirl rotation
     float angle = uTime * 0.04 + r * 0.012 + aSeed.x * 0.6;
@@ -82,11 +103,11 @@ const vertexShader = /* glsl */ `
     );
 
     // Non-linear breathe — uBreatheCurve > 1 means rare peaks (concentrates low bass near min)
-    float bassCurved = pow(uBass, uBreatheCurve);
+    float bassCurved = pow(bassP, uBreatheCurve);
     float breathe = uBreatheMin + bassCurved * uBreatheMax;
     pos *= breathe;
-    pos.y += aSeed.y * uMid   * 6.5;
-    pos   += aSeed   * uTreble * 1.8;
+    pos.y += aSeed.y * midP    * 6.5;
+    pos   += aSeed   * trebleP * 1.8;
 
     // Beat burst + echo — two radial shockwaves, echo slightly smaller
     pos += normalize(basePos) * (uBurst * 28.0 + uEcho * 18.0);
@@ -96,13 +117,13 @@ const vertexShader = /* glsl */ `
     pos = mix(pos, scatterTarget, uScatter);
 
     vRadial = clamp(r / 60.0, 0.0, 1.0);
-    vBright = 0.55 + uBass * 1.05 + uTreble * 0.45 + uBurst * 1.1 + uEcho * 0.7 + uScatter * 0.6;
+    vBright = 0.55 + bassP * 1.05 + trebleP * 0.45 + uBurst * 1.1 + uEcho * 0.7 + uScatter * 0.6;
 
     vec4 mv = modelViewMatrix * vec4(pos, 1.0);
     gl_Position = projectionMatrix * mv;
 
     // Non-linear size — same curve story as breathe.
-    float sizeCurved = pow(clamp(uBass, 0.0, 1.0), uSizeCurve);
+    float sizeCurved = pow(clamp(bassP, 0.0, 1.0), uSizeCurve);
     float size = aSize * (uSizeMin + sizeCurved * uSizeMax + uBurst * 0.9 + uScatter * 0.5);
     gl_PointSize = size * uPixelRatio * (220.0 / -mv.z);
   }
@@ -166,9 +187,11 @@ export class Visualizer {
     this.eTrebleHue  = 0.10;   // treble energy → inner hue shift
     this.eSatReact   = 0.25;   // treble → saturation + lightness reactivity
     this.eBurstHue   = 0.44;   // burst event → instant chromatic flash (inner/outer diverge)
+    this.eStereoColor = 0;     // 0 = mono, 1 = inner reacts to L / outer to R
 
     // Floor tuning (live-editable via setTuning).
     Object.assign(this, FLOOR_DEFAULTS);
+    this.fStereoFloor = 0;     // 0 = mono, 1 = left grid half = L / right = R
 
     this._buildGrid();
     this._buildParticles();
@@ -258,7 +281,7 @@ export class Visualizer {
     this.scene.add(mesh);
   }
 
-  _updateGrid(freqData) {
+  _updateGrid(freqData, freqDataL, freqDataR) {
     const pos = this.grid.geometry.attributes.position;
     const col = this.grid.geometry.attributes.color;
 
@@ -267,11 +290,19 @@ export class Visualizer {
       const decay    = this.fDecay;
       const attack   = 1 - decay;
       const hotCurve = this.fHotCurve;
+      const stereo   = this.fStereoFloor;
+      const halfCol  = (GRID_COLS - 1) / 2;
 
       for (let c = 0; c < GRID_COLS; c++) {
         const t      = c / (GRID_COLS - 1);          // 0=bass … 1=treble
         const binIdx = Math.max(1, Math.round(Math.pow(220, t)));
-        const raw    = (freqData[binIdx] || 0) / 255;
+        // Pick stereo channel by column position (left half = L, right = R).
+        const channelData = c < halfCol ? freqDataL : freqDataR;
+        const monoVal     = (freqData[binIdx]   || 0) / 255;
+        const chanVal     = channelData
+          ? (channelData[binIdx] || 0) / 255
+          : monoVal;
+        const raw    = monoVal * (1 - stereo) + chanVal * stereo;
         const target = raw * maxH;
 
         const h = this._gridColH;
@@ -371,6 +402,13 @@ export class Visualizer {
         uBass:         { value: 0 },
         uMid:          { value: 0 },
         uTreble:       { value: 0 },
+        uBassL:        { value: 0 },
+        uMidL:         { value: 0 },
+        uTrebleL:      { value: 0 },
+        uBassR:        { value: 0 },
+        uMidR:         { value: 0 },
+        uTrebleR:      { value: 0 },
+        uStereoParticles: { value: 0 },
         uBurst:        { value: 0 },
         uEcho:         { value: 0 },
         uScatter:      { value: 0 },
@@ -398,23 +436,30 @@ export class Visualizer {
 
   // ── Colours ──────────────────────────────────────────────────────────────
 
-  _updateColors(bands, t, burst) {
+  _updateColors(bands, bandsL, bandsR, t, burst) {
     const cycle = (t * this.eCycleSpeed) % 1.0;
 
     // On a burst: inner and outer hues diverge in opposite directions,
     // creating a chromatic flash that decays with the burst envelope.
     const burstShift = burst * this.eBurstHue;
 
-    const iH = (BASE_INNER_H + cycle - bands.treble * this.eTrebleHue - burstShift + 1.0) % 1.0;
-    const iS = 1.0 - bands.treble * this.eSatReact;
-    const iL = 0.50 + bands.treble * this.eSatReact;
+    // Stereo divergence — at eStereoColor=1, the inner color reacts purely to
+    // L and the outer purely to R, so panning splits the palette.
+    const stereo    = this.eStereoColor;
+    const innerBass   = bands.bass   * (1 - stereo) + (bandsL ? bandsL.bass   : bands.bass)   * stereo;
+    const innerTreble = bands.treble * (1 - stereo) + (bandsL ? bandsL.treble : bands.treble) * stereo;
+    const outerBass   = bands.bass   * (1 - stereo) + (bandsR ? bandsR.bass   : bands.bass)   * stereo;
 
-    const oH = (BASE_OUTER_H + cycle + bands.bass * this.eBassHue + burstShift) % 1.0;
-    const oL = 0.45 + bands.bass * 0.42;
+    const iH = (BASE_INNER_H + cycle - innerTreble * this.eTrebleHue - burstShift + 1.0) % 1.0;
+    const iS = 1.0 - innerTreble * this.eSatReact;
+    const iL = 0.50 + innerTreble * this.eSatReact;
+
+    const oH = (BASE_OUTER_H + cycle + outerBass * this.eBassHue + burstShift) % 1.0;
+    const oL = 0.45 + outerBass * 0.42;
 
     this._cInner.setHSL(iH, iS, iL);
     this._cOuter.setHSL(oH, 1.0, oL);
-    this._cFog.setHSL(oH, 0.75, 0.06 + bands.bass * 0.05);
+    this._cFog.setHSL(oH, 0.75, 0.06 + outerBass * 0.05);
 
     this.particles.material.uniforms.uColorInner.value.copy(this._cInner);
     this.particles.material.uniforms.uColorOuter.value.copy(this._cOuter);
@@ -435,15 +480,26 @@ export class Visualizer {
 
   // ── Render ───────────────────────────────────────────────────────────────
 
-  render(bands, freqData, beat) {
+  render(bands, freqData, beat, stereo) {
     const dt = this.clock.getDelta();
     const t  = this.clock.getElapsedTime();
     const u  = this.particles.material.uniforms;
 
-    u.uTime.value   = t;
-    u.uBass.value   = bands.bass;
-    u.uMid.value    = bands.mid;
-    u.uTreble.value = bands.treble;
+    const bandsL    = stereo?.bandsL    || bands;
+    const bandsR    = stereo?.bandsR    || bands;
+    const freqDataL = stereo?.freqDataL || freqData;
+    const freqDataR = stereo?.freqDataR || freqData;
+
+    u.uTime.value    = t;
+    u.uBass.value    = bands.bass;
+    u.uMid.value     = bands.mid;
+    u.uTreble.value  = bands.treble;
+    u.uBassL.value   = bandsL.bass;
+    u.uMidL.value    = bandsL.mid;
+    u.uTrebleL.value = bandsL.treble;
+    u.uBassR.value   = bandsR.bass;
+    u.uMidR.value    = bandsR.mid;
+    u.uTrebleR.value = bandsR.treble;
 
     // Beat burst: fast radial punch, echo 200ms later, scatter: reform ~1.5s
     // Cooldown: don't re-trigger while still reforming from last beat
@@ -458,8 +514,8 @@ export class Visualizer {
     u.uEcho.value    *= 0.82;
     u.uScatter.value *= 0.945;
 
-    this._updateColors(bands, t, u.uBurst.value);
-    this._updateGrid(freqData);
+    this._updateColors(bands, bandsL, bandsR, t, u.uBurst.value);
+    this._updateGrid(freqData, freqDataL, freqDataR);
 
     // Y-axis spin (podium rotation). Bass speeds it up.
     this.particles.rotation.y += dt * (this.cRotateSpeed + bands.bass * 0.46);
