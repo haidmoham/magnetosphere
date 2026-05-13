@@ -626,7 +626,7 @@ export class Visualizer {
         uSizeMin:      { value: 0.24 },
         uSizeMax:      { value: 1.72 },
         uSizeCurve:    { value: 2.65 },
-        uShapeMix:     { value: 0.29 },   // 0 = sphere, 1 = heart
+        uShapeMix:     { value: 0 },      // driven by setShape() transition system
         uFlowStrength: { value: 1.0  },   // curl-noise amplitude multiplier
         uAttrPos0:  { value: new THREE.Vector3( 55,  0,  0) },
         uAttrPos1:  { value: new THREE.Vector3(-55,  0,  0) },
@@ -754,11 +754,23 @@ export class Visualizer {
     this._updateGrid(freqData, freqDataL, freqDataR);
     this._updateAttractors(bands, dt);
 
+    // Shape transition: lerp uShapeMix toward target. When a pending shape
+    // is queued and the mix has nearly hit zero, rebuild the target buffer
+    // and flip the target back to 1 — gives a clean "collapse → bloom" feel.
+    this._shapeMixCurrent += (this._shapeMixTarget - this._shapeMixCurrent) * 0.07;
+    u.uShapeMix.value = this._shapeMixCurrent;
+    if (this._pendingShape && this._shapeMixCurrent < 0.05) {
+      this._rebuildShapeTarget(this._pendingShape);
+      this._shapeCurrent   = this._pendingShape;
+      this._pendingShape   = null;
+      this._shapeMixTarget = (this._shapeCurrent === "sphere") ? 0 : 1;
+    }
+
     // Y-axis spin (podium rotation). Bass speeds it up.
     this.particles.rotation.y += dt * (this.cRotateSpeed + bands.bass * 0.46);
-    // X-axis tumble — only active for sphere mode. When morphed toward heart,
-    // accumulation is gated and any existing tilt damps back to upright.
-    const shapeMix = u.uShapeMix.value;
+    // X-axis tumble — only active for sphere mode. When morphed toward another
+    // shape, accumulation is gated and any existing tilt damps back to upright.
+    const shapeMix = this._shapeMixCurrent;
     this.particles.rotation.x += dt * 0.018 * (1 - shapeMix);
     this.particles.rotation.x *= 1 - shapeMix * dt * 2.5;
 

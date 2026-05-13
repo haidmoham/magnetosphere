@@ -130,6 +130,14 @@
         <button class="palette-btn" data-palette="void"      title="violet + magenta">void</button>
         <button class="palette-btn" data-palette="ember"     title="amber + crimson">ember</button>
       </div>
+      <div class="tuning-shapes">
+        <button class="shape-btn active" data-shape="sphere" title="uniform spherical shell">sphere</button>
+        <button class="shape-btn"        data-shape="heart"  title="layered 3D heart">heart</button>
+        <button class="shape-btn"        data-shape="torus"  title="donut ring">torus</button>
+        <button class="shape-btn"        data-shape="galaxy" title="3-arm spiral disk">galaxy</button>
+        <button class="shape-btn"        data-shape="cube"   title="six-face cube">cube</button>
+        <button class="shape-btn"        data-shape="helix"  title="DNA double helix">helix</button>
+      </div>
       <div class="tuning-slots">
         <button class="slot-btn" data-slot="1" title="click empty to save · click filled to load · shift+click to overwrite · right-click to clear">slot 1</button>
         <button class="slot-btn" data-slot="2" title="click empty to save · click filled to load · shift+click to overwrite · right-click to clear">slot 2</button>
@@ -279,17 +287,6 @@
             <label>threshold</label>
             <input type="range" data-uniform="bThreshold" min="0" max="1.0" step="0.01" value="0.71">
             <span class="slider-val">0.71</span>
-          </div>
-        </div>
-        <div class="tuning-section">
-          <div class="section-header">
-            <button class="section-label" aria-label="Reset shape values to defaults">shape</button>
-            <button class="section-random" title="🎲 randomize section" aria-label="Randomize shape values">🎲</button>
-          </div>
-          <div class="slider-row">
-            <label>sphere → heart</label>
-            <input type="range" data-uniform="uShapeMix" min="0" max="1" step="0.01" value="0.29">
-            <span class="slider-val">0.29</span>
           </div>
         </div>
 

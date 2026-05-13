@@ -792,6 +792,48 @@ body::after {
 }
 .palette-btn:active { transform: translateY(1px); }
 
+/* Shape chips — violet-themed to distinguish from cyan presets (behavior)
+   and pink palettes (color). One can be .active at a time. */
+.tuning-shapes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 6px 0 4px;
+  border-bottom: 1px solid rgba(165, 102, 255, 0.12);
+}
+#tuning-panel.collapsed .tuning-shapes { display: none; }
+
+.shape-btn {
+  appearance: none;
+  background: rgba(165, 102, 255, 0.05);
+  border: 1px solid rgba(165, 102, 255, 0.25);
+  border-radius: 2px;
+  padding: 3px 9px;
+  cursor: pointer;
+  font-family: "Orbitron", monospace;
+  font-weight: 700;
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  text-shadow: 0 0 4px rgba(165, 102, 255, 0.2);
+  transition: background 140ms ease, border-color 140ms ease,
+              color 140ms ease, text-shadow 140ms ease, transform 80ms ease;
+}
+.shape-btn:hover {
+  background: rgba(165, 102, 255, 0.18);
+  border-color: var(--neon-violet);
+  color: var(--neon-violet);
+  text-shadow: 0 0 6px rgba(165, 102, 255, 0.5);
+}
+.shape-btn.active {
+  background: rgba(165, 102, 255, 0.22);
+  border-color: var(--neon-violet);
+  color: var(--neon-violet);
+  text-shadow: 0 0 6px rgba(165, 102, 255, 0.7);
+}
+.shape-btn:active { transform: translateY(1px); }
+
 /* User save slots — empty (dashed border, dim) vs filled (solid cyan glow). */
 .tuning-slots {
   display: flex;

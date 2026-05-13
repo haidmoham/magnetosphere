@@ -305,11 +305,12 @@ function captureState() {
   document.querySelectorAll(".stereo-btn").forEach((btn) => {
     stereo[btn.dataset.stereo] = parseInt(btn.dataset.on, 10) || 0;
   });
-  return { sliders, stereo };
+  return { sliders, stereo, shape: currentShape };
 }
 
 function applyState(state) {
   if (!state) return;
+  if (state.shape) applyShape(state.shape);
   if (state.sliders) {
     document.querySelectorAll("#tuning-panel input[type=range]").forEach((input) => {
       const uniform = input.dataset.uniform;
@@ -334,10 +335,12 @@ function applyState(state) {
 // slider/stereo keys fall back to HTML defaults / mono.
 const PRESETS = {
   starfield: {
+    shape: "sphere",
     sliders: { cAttrCount: 2, uAttrStr: 7.5, cAttrRadius: 55 },
     stereo: { uStereoParticles: 0, fStereoFloor: 0, eStereoColor: 0 },
   },
   heart: {
+    shape: "heart",
     // Single slow attractor at tight radius so the cloud wraps into the heart.
     sliders: {
       uBreatheMin: 0.35, uBreatheMax: 2.50, uBreatheCurve: 2.35,
@@ -345,54 +348,54 @@ const PRESETS = {
       cBurstInterval: 0.5, cRotateSpeed: 0.06,
       fMaxH: 30, fScroll: 5, fScrollBass: 22, fDecay: 0.80, fHotCurve: 2.5,
       bStrength: 0.48, bRadius: 0.25, bThreshold: 0.38,
-      uShapeMix: 1.0,
       eCycleSpeed: 0.05, eBassHue: 0.50, eTrebleHue: 0.10, eSatReact: 0.30, eBurstHue: 0.50,
       cAttrCount: 1, uAttrStr: 6.0, cAttrRadius: 35,
     },
     stereo: { uStereoParticles: 0, fStereoFloor: 0, eStereoColor: 0 },
   },
   nebula: {
-    // Dreamy soft-glow cloud: gentle breathe, slow rotation, low floor,
-    // high bloom, stereo color split for cyan/pink hemisphere tint.
-    // Single slow-drifting well at large radius — barely perceptible pull.
+    shape: "galaxy",
+    // Dreamy soft-glow cloud on a flat spiral disk: gentle breathe, slow
+    // rotation, low floor, high bloom, stereo color split for cyan/pink
+    // hemisphere tint across the spiral arms.
     sliders: {
       uBreatheMin: 0.55, uBreatheMax: 1.80, uBreatheCurve: 1.40,
       uSizeMin:    0.35, uSizeMax:    2.00, uSizeCurve:    1.50,
       cBurstInterval: 3.5, cRotateSpeed: 0.04,
       fMaxH: 8, fScroll: 1.5, fScrollBass: 6, fDecay: 0.92, fHotCurve: 2.0,
       bStrength: 0.72, bRadius: 0.55, bThreshold: 0.25,
-      uShapeMix: 0,
       eCycleSpeed: 0.04, eBassHue: 0.30, eTrebleHue: 0.20, eSatReact: 0.50, eBurstHue: 0.25,
       cAttrCount: 1, uAttrStr: 4.5, cAttrRadius: 80,
     },
     stereo: { uStereoParticles: 0, fStereoFloor: 0, eStereoColor: 1 },
   },
   storm: {
-    // Aggressive/snappy: fast bursts, fast spin, fast bass-scroll floor,
-    // sharp decay, all stereo channels engaged.
-    // All 4 attractors at high strength — cloud tears and reforms frantically.
+    shape: "torus",
+    // Aggressive/snappy: a spinning donut torn by 4 attractors at max strength.
+    // Fast bursts, fast spin, fast bass-scroll floor, sharp decay, all stereo
+    // channels engaged.
     sliders: {
       uBreatheMin: 0.40, uBreatheMax: 2.20, uBreatheCurve: 0.80,
       uSizeMin:    0.18, uSizeMax:    1.50, uSizeCurve:    2.20,
       cBurstInterval: 0.8, cRotateSpeed: 0.32,
       fMaxH: 38, fScroll: 9, fScrollBass: 55, fDecay: 0.58, fHotCurve: 4.7,
       bStrength: 0.42, bRadius: 0.30, bThreshold: 0.55,
-      uShapeMix: 0,
       eCycleSpeed: 0.015, eBassHue: 0.42, eTrebleHue: 0.18, eSatReact: 0.65, eBurstHue: 0.40,
       cAttrCount: 4, uAttrStr: 14.0, cAttrRadius: 65,
     },
     stereo: { uStereoParticles: 1, fStereoFloor: 1, eStereoColor: 1 },
   },
   vapor: {
-    // Slow + deep + half-heart: long burst interval, deep saturation, slow
-    // color cycle, stereo floor only. Two wells at mid radius, gentle pull.
+    shape: "helix",
+    // Slow + deep + drifting double-helix: long burst interval, deep
+    // saturation, slow color cycle, stereo floor only. Two wells at mid
+    // radius pull the strands gently apart and back.
     sliders: {
       uBreatheMin: 0.30, uBreatheMax: 1.60, uBreatheCurve: 2.60,
       uSizeMin:    0.45, uSizeMax:    1.90, uSizeCurve:    2.30,
       cBurstInterval: 6.0, cRotateSpeed: 0.05,
       fMaxH: 22, fScroll: 2.5, fScrollBass: 15, fDecay: 0.90, fHotCurve: 2.2,
       bStrength: 0.58, bRadius: 0.48, bThreshold: 0.42,
-      uShapeMix: 0.55,
       eCycleSpeed: 0.025, eBassHue: 0.45, eTrebleHue: 0.06, eSatReact: 0.38, eBurstHue: 0.42,
       cAttrCount: 2, uAttrStr: 9.0, cAttrRadius: 50,
     },
@@ -472,6 +475,30 @@ function applyPalette(name) {
 document.querySelectorAll("#tuning-panel .palette-btn").forEach((btn) => {
   btn.addEventListener("click", () => applyPalette(btn.dataset.palette));
 });
+
+// Shape selection. The visualizer drives the actual particle morph
+// (smooth sphere↔target transition); this layer manages the active chip
+// highlight + localStorage persistence. captureState/applyState also
+// carry the shape field so presets and shared URLs restore it.
+const SHAPE_KEY = "voidpulse.shape";
+let currentShape = localStorage.getItem(SHAPE_KEY) || "sphere";
+
+function applyShape(name, persist = true) {
+  currentShape = name;
+  viz.setShape(name);
+  document.querySelectorAll(".shape-btn").forEach((btn) => {
+    btn.classList.toggle("active", btn.dataset.shape === name);
+  });
+  if (persist) localStorage.setItem(SHAPE_KEY, name);
+}
+
+document.querySelectorAll(".shape-btn").forEach((btn) => {
+  btn.addEventListener("click", () => applyShape(btn.dataset.shape));
+});
+
+// Restore on load — if the saved shape isn't sphere, this triggers a smooth
+// sphere→shape intro animation on first render.
+applyShape(currentShape, false);
 
 // User save slots: 4 chips, persisted as full state shapes in localStorage.
 //   - Empty: plain click saves current state.
