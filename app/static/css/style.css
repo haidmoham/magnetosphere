@@ -337,8 +337,8 @@ body::after {
 /* ─── meters ─────────────────────────────────────────────────── */
 #meters {
   position: fixed;
-  right: 20px;
-  bottom: 20px;
+  left: 20px;
+  top: 78px;       /* below the title + credit line */
   display: flex;
   flex-direction: column;
   gap: 8px;
