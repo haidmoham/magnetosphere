@@ -418,6 +418,7 @@ body::after {
   top: 20px;
   right: 20px;
   width: 300px;
+  max-height: calc((100vh - 40px) / 0.85);  /* counter the 0.85 scale so visible height ≈ viewport - 40px */
   background: rgba(8, 0, 26, 0.82);
   border: 1px solid rgba(165, 102, 255, 0.35);
   border-radius: 4px;
@@ -493,6 +494,28 @@ body::after {
   display: flex;
   flex-direction: column;
   gap: 12px;
+  overflow-y: auto;
+  min-height: 0;
+  flex: 1 1 auto;
+  padding-right: 4px;
+  margin-right: -4px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 240, 255, 0.4) transparent;
+}
+.tuning-body::-webkit-scrollbar {
+  width: 6px;
+}
+.tuning-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+.tuning-body::-webkit-scrollbar-thumb {
+  background: rgba(0, 240, 255, 0.3);
+  border-radius: 3px;
+  transition: background 140ms ease;
+}
+.tuning-body::-webkit-scrollbar-thumb:hover {
+  background: var(--neon-cyan);
+  box-shadow: 0 0 6px var(--neon-cyan);
 }
 
 .tuning-section {
