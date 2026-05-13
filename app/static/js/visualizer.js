@@ -151,6 +151,9 @@ export class Visualizer {
     this._cGrid  = new THREE.Color();
     this._cFog   = new THREE.Color();
 
+    // Cloud animation params (live-editable via setTuning, c* prefix).
+    this.cBurstFreq = 0.08;   // scatter must fall below this before next burst fires
+
     // Floor tuning (live-editable via setTuning).
     Object.assign(this, FLOOR_DEFAULTS);
 
@@ -393,7 +396,7 @@ export class Visualizer {
 
     // Beat burst: fast radial punch, echo 200ms later, scatter: reform ~1.5s
     // Cooldown: don't re-trigger while still reforming from last beat
-    if (beat && u.uScatter.value < 0.08) {
+    if (beat && u.uScatter.value < this.cBurstFreq) {
       u.uBurst.value   = 1.0;
       u.uScatter.value = 1.0;
       clearTimeout(this._echoTimer);
@@ -428,7 +431,7 @@ export class Visualizer {
     if (name.startsWith("u")) {
       const u = this.particles.material.uniforms;
       if (u[name]) u[name].value = value;
-    } else if (name.startsWith("f")) {
+    } else if (name.startsWith("f") || name.startsWith("c")) {
       if (name in this) this[name] = value;
     } else if (name.startsWith("b") && this.bloom) {
       const map = { bStrength: "strength", bRadius: "radius", bThreshold: "threshold" };

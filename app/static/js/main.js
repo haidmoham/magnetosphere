@@ -149,6 +149,22 @@ document.querySelectorAll("#tuning-panel input[type=range]").forEach((input) => 
   });
 });
 
+// Click a section header to reset only the sliders within that section.
+document.querySelectorAll("#tuning-panel .section-label").forEach((header) => {
+  const section = header.closest(".tuning-section");
+  header.addEventListener("click", () => {
+    section.querySelectorAll("input[type=range]").forEach((input) => {
+      input.value = input.defaultValue;
+      const v    = applyTransform(input, parseFloat(input.defaultValue));
+      const valEl = input.parentElement.querySelector(".slider-val");
+      valEl.textContent = v.toFixed(2);
+      viz.setTuning(input.dataset.uniform, v);
+      delete savedTuning[input.dataset.uniform];
+    });
+    localStorage.setItem(TUNING_KEY, JSON.stringify(savedTuning));
+  });
+});
+
 // Collapse / expand the tuning panel.
 const tuningPanel  = document.getElementById("tuning-panel");
 const tuningToggle = document.getElementById("tuning-toggle");
