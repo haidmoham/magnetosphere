@@ -101,7 +101,7 @@ function frame() {
 
 // Tuning panel: sliders write directly to shader uniforms, values persist
 // across reloads via localStorage so a good config survives a refresh.
-const TUNING_KEY = "voidpulse.tuning.v1";
+const TUNING_KEY = "voidpulse.tuning.v2";
 const savedTuning = JSON.parse(localStorage.getItem(TUNING_KEY) || "{}");
 
 // If a slider has data-exponent="N", the raw slider value is raised to the

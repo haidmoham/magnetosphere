@@ -17,7 +17,7 @@ const GRID_DEPTH     = 380;
 const GRID_Z_CENTER  = -80;  // world-Z of grid midpoint
 // Floor tuning defaults — overridable via the tuning panel (fMaxH, fScroll, …).
 const FLOOR_DEFAULTS = {
-  fMaxH:       18,    // max vertex lift (units)
+  fMaxH:       30,    // max vertex lift (units)
   fScroll:      5,    // base scroll speed toward camera
   fScrollBass: 22,    // extra scroll speed driven by bass
   fDecay:    0.80,    // peak fall rate (lower = faster decay)
@@ -25,11 +25,11 @@ const FLOOR_DEFAULTS = {
 };
 
 // Bloom defaults — UnrealBloomPass.
-// bStrength is pre-transformed: slider raw 0.60 → pow(0.60, 2.2) ≈ 0.33.
+// bStrength is pre-transformed: slider raw 0.42 → pow(0.42, 2.2) ≈ 0.15.
 const BLOOM_DEFAULTS = {
-  bStrength:  0.33,
-  bRadius:    0.55,
-  bThreshold: 0.20,
+  bStrength:  0.15,
+  bRadius:    0.50,
+  bThreshold: 0.30,
 };
 
 const vertexShader = /* glsl */ `
@@ -331,7 +331,7 @@ export class Visualizer {
         uPixelRatio:   { value: this.renderer.getPixelRatio() },
         uColorInner:   { value: new THREE.Color().setHSL(BASE_INNER_H, 1.0, 0.55) },
         uColorOuter:   { value: new THREE.Color().setHSL(BASE_OUTER_H, 1.0, 0.50) },
-        uBreatheMin:   { value: 0.20 },
+        uBreatheMin:   { value: 0.35 },
         uBreatheMax:   { value: 1.70 },
         uBreatheCurve: { value: 2.35 },
         uSizeMin:      { value: 0.14 },
