@@ -21,6 +21,10 @@ const helpBtn          = document.getElementById("help-btn");
 const helpTooltip      = document.getElementById("help-tooltip");
 const spotifyTooltip   = document.getElementById("spotify-tooltip");
 const spotifyDisconnect = document.getElementById("spotify-disconnect");
+const npCard   = document.getElementById("now-playing");
+const npArt    = document.getElementById("np-art");
+const npTrack  = document.getElementById("np-track");
+const npArtist = document.getElementById("np-artist");
 const zoomInBtn   = document.getElementById("zoom-in-btn");
 const zoomOutBtn  = document.getElementById("zoom-out-btn");
 const zoomValue   = document.getElementById("zoom-value");
@@ -137,6 +141,22 @@ function formatSpotifyLabel() {
   return `spotify · ${track.name}${artists ? " — " + artists : ""}${status}${where}`;
 }
 
+/** Show/hide the now-playing card based on current Spotify state. */
+function updateNowPlaying() {
+  const track = spotify.currentTrack;
+  if (!spotify.isRunning || !track || !spotify.isPlaying) {
+    npCard.classList.remove("np-visible");
+    return;
+  }
+  // Album art — use smallest available image (last in Spotify's descending array)
+  const images = track.album?.images;
+  const artUrl = images?.length ? images[images.length - 1].url : "";
+  npArt.src = artUrl;
+  npTrack.textContent  = track.name || "";
+  npArtist.textContent = (track.artists || []).map(a => a.name).join(", ");
+  npCard.classList.add("np-visible");
+}
+
 sourcePicker.addEventListener("click", async (e) => {
   const btn = e.target.closest(".src-btn");
   if (!btn) return;
@@ -199,8 +219,8 @@ async function activateSpotify() {
   // When no audio source is active, SpotifyWatcher.tick() synthesises bands
   // from the track's BPM so the cloud still breathes in time.
   try {
-    spotify.onTrackChange  = () => refreshUi();
-    spotify.onStateChange  = () => refreshUi();
+    spotify.onTrackChange  = () => { refreshUi(); updateNowPlaying(); };
+    spotify.onStateChange  = () => { refreshUi(); updateNowPlaying(); };
     spotify.onFeaturesLoad = (features) => {
       const palette = paletteForMood(features);
       if (palette) applyPalette(palette);
@@ -949,6 +969,7 @@ spotifyDisconnect.addEventListener("click", (e) => {
   spotify.stop();
   spotifyTooltip.hidden = true;
   refreshUi();
+  updateNowPlaying();
 });
 
 helpBtn.addEventListener("click", (e) => {
