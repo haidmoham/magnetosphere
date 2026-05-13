@@ -23,6 +23,9 @@ html, body {
   overflow: hidden;
 }
 
+/* `[hidden]` attribute must beat any explicit `display:` rule (e.g. flex on tooltips). */
+[hidden] { display: none !important; }
+
 /* Subtle CRT scanlines */
 body::after {
   content: "";
