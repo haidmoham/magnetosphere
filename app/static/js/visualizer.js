@@ -286,7 +286,9 @@ export class Visualizer {
     });
 
     const mesh = new THREE.LineSegments(geo, mat);
-    mesh.position.y = -48;
+    mesh.position.y   = -48;
+    mesh.renderOrder  = -1;
+    mat.depthWrite    = false;
     this.grid            = mesh;
     this._gridColH       = new Float32Array(GRID_COLS).fill(0);
     this._gridRowSpacing = rowSpacing;
