@@ -1,6 +1,7 @@
 import { AudioEngine } from "./audio.js";
 import { Visualizer } from "./visualizer.js";
 import { SpotifyWatcher } from "./spotify.js";
+import { BeatTracker } from "./beat-tracker.js";
 
 const canvas = document.getElementById("stage");
 const sourcePicker = document.getElementById("source-picker");
@@ -26,6 +27,33 @@ const audio   = new AudioEngine();
 const viz     = new Visualizer(canvas);
 const spotify = new SpotifyWatcher();
 const spotifyBtn = document.querySelector('.src-btn[data-src="spotify"]');
+
+// BeatTracker is instantiated lazily the first time an audio source is activated
+// (the AudioContext must exist first). Once loaded, it replaces the FFT onset
+// detector with Essentia.js RhythmExtractor2013 for real beat phase alignment.
+// Until Essentia is ready (~6-8s on first use), audio.beat() is used as fallback.
+let beatTracker = null;
+
+function ensureBeatTracker() {
+  if (beatTracker || !audio.ctx) return beatTracker;
+  beatTracker = new BeatTracker(audio.ctx);
+  beatTracker.onBeat = () => {
+    // When Essentia detects a beat on a live audio source, phase-lock the
+    // Spotify BPM pulse grid so it aligns with the real musical downbeat.
+    if (spotify.isPlaying) spotify.phaseLock(spotify.estimatePositionMs());
+  };
+  beatTracker.onBpm = (bpm) => {
+    console.info(`[beat-tracker] ${bpm.toFixed(1)} BPM`);
+  };
+  return beatTracker;
+}
+
+/** Connect (or reconnect) BeatTracker to the current audio source node. */
+async function connectBeatTracker() {
+  if (!audio.source || !audio.ctx) return;
+  const bt = ensureBeatTracker();
+  if (bt) await bt.connect(audio.source);
+}
 
 // Photosensitivity warning — shown once per browser session.
 const ewOverlay = document.getElementById("epilepsy-warning");
@@ -84,12 +112,12 @@ sourcePicker.addEventListener("click", async (e) => {
   const src = btn.dataset.src;
   if (src === "system") {
     e.preventDefault();
-    try { await audio.useSystemAudio(); }
+    try { await audio.useSystemAudio(); connectBeatTracker().catch(() => {}); }
     catch (err) { showError(err.message || String(err)); }
     refreshUi();
   } else if (src === "mic") {
     e.preventDefault();
-    try { await audio.useMicrophone(); }
+    try { await audio.useMicrophone(); connectBeatTracker().catch(() => {}); }
     catch (err) { showError(err.message || String(err)); }
     refreshUi();
   } else if (src === "spotify") {
@@ -189,6 +217,7 @@ fileInput.addEventListener("change", async () => {
   try {
     await audio.loadFile(file);
     await audio.play();
+    connectBeatTracker().catch(() => {});
   } catch (err) {
     showError(err.message || String(err));
   }
@@ -207,6 +236,9 @@ playBtn.addEventListener("click", async () => {
 });
 
 stopBtn.addEventListener("click", async () => {
+  // Disconnect beat tracker before tearing down the source node so we don't
+  // leave the worklet connected to a stale (disconnected) AudioNode.
+  beatTracker?.disconnect();
   if (audio.mode === "spotify") {
     spotify.stop();
   } else {
@@ -219,15 +251,16 @@ stopBtn.addEventListener("click", async () => {
 function frame() {
   let bands, beat;
   if (audio.mode === "spotify") {
-    // Spotify mode: bands + beats come from the audio-analysis scheduler.
-    // Stereo split is unavailable (no per-channel data); the visualizer
-    // just behaves as mono in this mode.
+    // Spotify mode: bands + beats come from the BPM-pulse synthesiser.
+    // Stereo split is unavailable (no per-channel data in listening-along mode).
     const tick = spotify.tick();
     bands = tick.bands;
     beat  = tick.beat;
   } else {
-    bands = audio.bands();
-    beat  = audio.beat();
+    bands = audio.bands(); // also updates audio._beat internally
+    // Use Essentia once it has a confident BPM estimate; fall back to the
+    // two-envelope FFT onset detector until then (~6-8s on first use).
+    beat = beatTracker?.isReady ? beatTracker.beat() : audio.beat();
   }
   const stereo = {
     bandsL:    audio.bandsL(),
