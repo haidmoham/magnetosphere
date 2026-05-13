@@ -84,6 +84,7 @@ const vertexShader = /* glsl */ `
   uniform float uAttrStr;    // global pull strength
   uniform vec3  uCursorPos;      // world-space cursor intersection
   uniform float uCursorStrength; // 0 = off, 1 = on
+  uniform float uCursorRadius;   // smoothstep outer edge (world units)
   attribute float aSize;
   attribute float aLayer;        // 0 = inner shell, 1 = outer shell
   attribute vec3 aSeed;
@@ -166,7 +167,7 @@ const vertexShader = /* glsl */ `
       vec3 toCursor = pos - uCursorPos;
       float d = max(length(toCursor), 0.5);
       float force = uCursorStrength * 38.0 / (d * 0.045 + 1.0);
-      force *= smoothstep(72.0, 4.0, d);
+      force *= smoothstep(uCursorRadius, 4.0, d);
       pos += normalize(toCursor) * force;
     }
 
@@ -674,6 +675,7 @@ export class Visualizer {
         uAttrStr:   { value: 7.5 },
         uCursorPos:      { value: new THREE.Vector3(0, 0, 0) },
         uCursorStrength: { value: 0 },
+        uCursorRadius:   { value: 72.0 },
       },
       vertexShader,
       fragmentShader,
@@ -909,6 +911,11 @@ export class Visualizer {
     const u = this.particles.material.uniforms;
     u.uCursorStrength.value = active ? 1.0 : 0.0;
     if (active && worldPos) u.uCursorPos.value.copy(worldPos);
+  }
+
+  /** Set the disruption radius (world units). Range ~15–200. */
+  setCursorRadius(r) {
+    this.particles.material.uniforms.uCursorRadius.value = r;
   }
 
   // Live-tuning hook for the debug panel.
