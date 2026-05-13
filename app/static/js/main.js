@@ -275,18 +275,21 @@ function frame() {
     // Spotify watcher (if also running) contributes auto-palette in background
     // and receives phase-lock via beatTracker.onBeat — but doesn't drive bands.
     bands = audio.bands(); // also updates audio._beat internally
-    if (beatTracker?.isReady) {
-      // Always call beat() to advance the grid and fire onBeat (→ spotify.phaseLock).
-      const gridBeat   = beatTracker.beat();
-      const now        = performance.now();
-      const minGapMs   = (beatTracker.intervalMs || 500) * 2.5;  // fire every ~2.5 beats
-      const energyOk   = bands.bass > 0.09;                      // 25% harder to trigger
-      const cooldownOk = now - _lastBurstMs >= minGapMs;
-      beat = gridBeat && energyOk && cooldownOk;
-      if (beat) _lastBurstMs = now;
-    } else {
-      beat = audio.beat(); // FFT onset detector (already energy-gated)
-    }
+
+    // Visual bursts come from the FFT onset detector — it fires on actual
+    // energy transients (kick, bass hit) and stays musical regardless of
+    // Essentia state. No haywire transition when Essentia kicks in.
+    // Essentia's role here is BPM estimation only: it sets the minimum gap
+    // so bursts pace to the song tempo without becoming a metronome.
+    // beatTracker.beat() is called separately just to advance the grid and
+    // fire onBeat → spotify.phaseLock(); it doesn't drive the visual burst.
+    if (beatTracker?.isReady) beatTracker.beat();
+
+    const fftBeat  = audio.beat();
+    const now      = performance.now();
+    const bpmGapMs = (beatTracker?.intervalMs ?? 500) * 2.5;
+    beat = fftBeat && (now - _lastBurstMs >= bpmGapMs);
+    if (beat) _lastBurstMs = now;
   } else if (spotify.isPlaying) {
     // No audio source — Spotify only. Fall back to BPM-synthesised bands so
     // the cloud still breathes in time with whatever's playing.
