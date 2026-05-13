@@ -503,7 +503,7 @@ body::after {
   gap: 4px;
 }
 
-#tuning-random, #tuning-reset, #tuning-toggle, #tuning-details {
+#tuning-random, #tuning-reset, #tuning-toggle, #tuning-details, #tuning-cinema {
   appearance: none;
   background: transparent;
   border: none;
@@ -527,11 +527,21 @@ body::after {
   transition: transform 180ms ease, color 140ms ease, text-shadow 140ms ease;
 }
 
-#tuning-random:hover, #tuning-reset:hover, #tuning-toggle:hover, #tuning-details:hover {
+#tuning-random:hover, #tuning-reset:hover, #tuning-toggle:hover, #tuning-details:hover, #tuning-cinema:hover {
   color: var(--neon-cyan);
   text-shadow: 0 0 6px var(--neon-cyan);
 }
-#tuning-random:active, #tuning-reset:active, #tuning-details:active { background: rgba(0, 240, 255, 0.1); }
+#tuning-random:active, #tuning-reset:active, #tuning-details:active, #tuning-cinema:active { background: rgba(0, 240, 255, 0.1); }
+
+/* Cinematic toggle — when on, glows pink to signal "active" state distinct from other action buttons. */
+#tuning-cinema.on {
+  color: var(--neon-pink);
+  text-shadow: 0 0 6px var(--neon-pink), 0 0 12px rgba(255, 61, 240, 0.4);
+}
+#tuning-cinema.on:hover {
+  color: var(--neon-pink);
+  text-shadow: 0 0 8px var(--neon-pink), 0 0 16px rgba(255, 61, 240, 0.6);
+}
 
 #tuning-panel.collapsed #tuning-toggle { transform: rotate(-90deg); }
 #tuning-panel.collapsed .tuning-body   { display: none; }

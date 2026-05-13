@@ -101,7 +101,7 @@ Smoothing is asymmetric: snap up fast on hits, decay slow (so a bass kick punche
 
 ### Phase 4 — Magnetosphere proper
 - [x] Audio-reactive attractors (mid orbit speed, bass radius pulse; 0–4 wells tunable)
-- [ ] Scene transitions (camera cuts, palette swaps)
+- [x] Scene transitions (cinematic mode: 6 named camera scenes + paired palette swaps every 12–20s)
 - [ ] Optional: webcam-based hand interaction
 
 ---

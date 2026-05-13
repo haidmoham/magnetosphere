@@ -28,6 +28,19 @@ const FLOOR_DEFAULTS = {
   fHotCurve:  2.5,    // white-hot bleach curve (higher = harder to bleach)
 };
 
+// Named camera positions used by cinematic mode. Each is an absolute world-
+// space (position, lookAt) pair; the render loop lerps the live camera
+// toward whichever scene is active. "front" mirrors the default angle the
+// app boots with so toggling cinematic off snaps cleanly back to it.
+const CAMERA_SCENES = {
+  front: { pos: [   0,  12, 135], look: [ 0,  -6, 0] },
+  top:   { pos: [   0, 145,  35], look: [ 0,   0, 0] },
+  side:  { pos: [ 145,   8,   0], look: [ 0,   0, 0] },
+  tilt:  { pos: [ -95,  85,  95], look: [ 0,   0, 0] },
+  close: { pos: [   0,   8,  72], look: [ 0,  -4, 0] },
+  wide:  { pos: [   0,  28, 230], look: [ 0, -10, 0] },
+};
+
 // Bloom defaults — UnrealBloomPass.
 // bStrength is pre-transformed: slider raw 0.395 → pow(0.395, 2.2) ≈ 0.13.
 const BLOOM_DEFAULTS = {
@@ -242,6 +255,20 @@ export class Visualizer {
     this._pendingShape   = null;
     this._shapeMixTarget = 0;
     this._shapeMixCurrent = 0;
+
+    // Camera scene state. Camera position and lookAt always lerp toward
+    // _camPosTarget / _camLookTarget. When not in cinematic mode, those
+    // targets are updated each frame from the zoom slider (front view).
+    // When cinematic is on, scenes auto-cycle every _sceneInterval seconds.
+    this._camPos        = new THREE.Vector3(0, 12, 135);
+    this._camLook       = new THREE.Vector3(0, -6,  0);
+    this._camPosTarget  = new THREE.Vector3(0, 12, 135);
+    this._camLookTarget = new THREE.Vector3(0, -6,  0);
+    this._cinematic     = false;
+    this._sceneName     = "front";
+    this._sceneT0       = 0;
+    this._sceneInterval = 14;
+    this.onSceneTick    = null;   // optional (name) => void hook
 
     // Color entropy params (e* prefix).
     this.eCycleSpeed = 0.00;   // base hue drift rate (hue units/sec)
@@ -778,13 +805,60 @@ export class Visualizer {
     this.grid.position.z =
       (this.grid.position.z + dt * (this.fScroll + bands.bass * this.fScrollBass)) % this._gridRowSpacing;
 
-    this.camera.position.x = 0;
-    this.camera.position.y = 12 + Math.cos(t * 0.06) * 2.5;
-    this._zoomCurrent += (this._zoomTarget - this._zoomCurrent) * 0.06;
-    this.camera.position.z = this._zoomCurrent;
-    this.camera.lookAt(0, -6, 0);
+    // Camera: lerp position + lookAt toward target each frame. In cinematic
+    // mode, the target rotates between named scenes every _sceneInterval
+    // seconds; otherwise the target is the live front view with the zoom
+    // slider driving Z.
+    if (this._cinematic) {
+      if (t - this._sceneT0 > this._sceneInterval) {
+        this._sceneT0       = t;
+        this._sceneInterval = 12 + Math.random() * 8;   // 12–20s between cuts
+        this._cycleScene();
+      }
+    } else {
+      this._zoomCurrent += (this._zoomTarget - this._zoomCurrent) * 0.06;
+      this._camPosTarget.set(0, 12, this._zoomCurrent);
+      this._camLookTarget.set(0, -6, 0);
+    }
+
+    this._camPos.lerp(this._camPosTarget,  0.035);
+    this._camLook.lerp(this._camLookTarget, 0.035);
+    this.camera.position.copy(this._camPos);
+    this.camera.position.y += Math.cos(t * 0.06) * 2.5;  // gentle bob
+    this.camera.lookAt(this._camLook);
 
     this.composer.render();
+  }
+
+  // Toggle cinematic mode. When on, the camera auto-cuts through named
+  // scenes every 12–20s and fires onSceneTick(name) so callers can sync
+  // palette swaps or other side-effects with each cut.
+  setCinematic(on) {
+    this._cinematic = !!on;
+    if (this._cinematic && this.clock) {
+      this._sceneT0       = this.clock.getElapsedTime();
+      this._sceneInterval = 12 + Math.random() * 8;
+    }
+  }
+  get cinematic() { return this._cinematic; }
+
+  // Snap-to / lerp-toward a named camera scene immediately (used when
+  // cinematic mode cycles, and exposed publicly for explicit cuts).
+  setCameraScene(name) {
+    const s = CAMERA_SCENES[name];
+    if (!s) return;
+    this._sceneName = name;
+    this._camPosTarget.set(s.pos[0],  s.pos[1],  s.pos[2]);
+    this._camLookTarget.set(s.look[0], s.look[1], s.look[2]);
+  }
+
+  _cycleScene() {
+    const names = Object.keys(CAMERA_SCENES);
+    let next;
+    do { next = names[Math.floor(Math.random() * names.length)]; }
+    while (next === this._sceneName && names.length > 1);
+    this.setCameraScene(next);
+    if (this.onSceneTick) this.onSceneTick(next);
   }
 
   // Zoom — set the target camera Z (any number, clamped to [zoomMin, zoomMax]).

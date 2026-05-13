@@ -248,6 +248,32 @@ tuningDetails.addEventListener("click", () => {
   applyAdvancedMode(!tuningPanel.classList.contains("advanced"));
 });
 
+// Cinematic mode — auto-cut camera + palette every 12–20s. State persists
+// across reloads. The visualizer fires onSceneTick on each cut and we pair
+// it with a random palette swap so each cut feels like a scene change.
+const tuningCinema    = document.getElementById("tuning-cinema");
+const CINEMA_KEY      = "voidpulse.cinema";
+const paletteNames    = Object.keys(PALETTES);
+let   lastCinemaPalette = null;
+
+viz.onSceneTick = () => {
+  // Pick a different palette than the last cut so consecutive scenes feel distinct.
+  let name;
+  do { name = paletteNames[Math.floor(Math.random() * paletteNames.length)]; }
+  while (name === lastCinemaPalette && paletteNames.length > 1);
+  lastCinemaPalette = name;
+  applyPalette(name);
+};
+
+function applyCinema(on) {
+  viz.setCinematic(on);
+  tuningCinema.classList.toggle("on", on);
+  localStorage.setItem(CINEMA_KEY, on ? "1" : "0");
+}
+
+applyCinema(localStorage.getItem(CINEMA_KEY) === "1");
+tuningCinema.addEventListener("click", () => applyCinema(!viz.cinematic));
+
 // Reset all sliders to their HTML default values and clear persisted state.
 tuningReset.addEventListener("click", () => {
   document.querySelectorAll("#tuning-panel input[type=range]").forEach((input) => {
