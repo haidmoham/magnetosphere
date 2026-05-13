@@ -3,6 +3,15 @@ import { Visualizer } from "./visualizer.js";
 import { SpotifyWatcher } from "./spotify.js";
 import { BeatTracker } from "./beat-tracker.js";
 
+function detectPhone() {
+  const coarse = window.matchMedia("(pointer: coarse)").matches;
+  const touch  = navigator.maxTouchPoints > 1;
+  const ua     = /Mobi|Android|iPhone|iPod/i.test(navigator.userAgent);
+  return (coarse && touch) || ua;
+}
+const IS_PHONE = detectPhone();
+document.body.classList.toggle("is-phone", IS_PHONE);
+
 const canvas = document.getElementById("stage");
 const sourcePicker = document.getElementById("source-picker");
 const fileInput = document.getElementById("file-input");
@@ -115,7 +124,7 @@ const zoomOutBtn  = document.getElementById("zoom-out-btn");
 const zoomValue   = document.getElementById("zoom-value");
 
 const audio   = new AudioEngine();
-const viz     = new Visualizer(canvas);
+const viz     = new Visualizer(canvas, IS_PHONE ? { particleCount: 15000, pixelRatioLimit: 1.5 } : {});
 const spotify = new SpotifyWatcher();
 const spotifyBtn = document.querySelector('.src-btn[data-src="spotify"]');
 
@@ -836,6 +845,14 @@ document.querySelectorAll("#tuning-panel .palette-btn").forEach((btn) => {
   btn.addEventListener("click", () => applyPalette(btn.dataset.palette));
 });
 
+// Mobile panel — same preset/palette chips wired to the same handlers.
+document.querySelectorAll("#mobile-panel .preset-btn").forEach((btn) => {
+  btn.addEventListener("click", () => applyPreset(btn.dataset.preset));
+});
+document.querySelectorAll("#mobile-panel .palette-btn").forEach((btn) => {
+  btn.addEventListener("click", () => applyPalette(btn.dataset.palette));
+});
+
 // Map ReccoBeats track-level features → a palette name. The 2D space we
 // care about is (valence × energy): valence ≈ how "positive" the track
 // sounds, energy ≈ intensity. We pick one of the existing palettes by
@@ -887,6 +904,8 @@ document.querySelectorAll(".shape-btn").forEach((btn) => {
 // Restore on load — if the saved shape isn't sphere, this triggers a smooth
 // sphere→shape intro animation on first render.
 applyShape(currentShape, false);
+// On phone: lock to heart regardless of any saved shape preference.
+if (IS_PHONE) applyShape("heart", false);
 
 // User save slots: 4 chips, persisted as full state shapes in localStorage.
 //   - Empty: plain click saves current state.

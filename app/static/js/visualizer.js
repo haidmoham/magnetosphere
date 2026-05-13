@@ -4,7 +4,7 @@ import { RenderPass }      from "three/addons/postprocessing/RenderPass.js";
 import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
 import { OutputPass }      from "three/addons/postprocessing/OutputPass.js";
 
-const PARTICLE_COUNT = 60000;
+let PARTICLE_COUNT = 60000;
 const COLOR_BG     = 0x08001a;
 const BASE_INNER_H = 0.556;
 const BASE_OUTER_H = 0.840;
@@ -211,7 +211,9 @@ const fragmentShader = /* glsl */ `
 `;
 
 export class Visualizer {
-  constructor(canvas) {
+  constructor(canvas, { particleCount = 60000, pixelRatioLimit = 2 } = {}) {
+    PARTICLE_COUNT = particleCount;
+    this._pixelRatioLimit = pixelRatioLimit;
     this.canvas = canvas;
     this.renderer = new THREE.WebGLRenderer({
       canvas,
@@ -219,7 +221,7 @@ export class Visualizer {
       alpha: false,
       powerPreference: "high-performance",
     });
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, pixelRatioLimit));
     this.renderer.setSize(window.innerWidth, window.innerHeight, false);
     this.renderer.setClearColor(COLOR_BG, 1);
 
@@ -308,7 +310,7 @@ export class Visualizer {
   _buildComposer() {
     const w = window.innerWidth, h = window.innerHeight;
     this.composer = new EffectComposer(this.renderer);
-    this.composer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    this.composer.setPixelRatio(Math.min(window.devicePixelRatio, this._pixelRatioLimit));
     this.composer.setSize(w, h);
 
     this.composer.addPass(new RenderPass(this.scene, this.camera));

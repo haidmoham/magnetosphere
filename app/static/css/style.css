@@ -1742,3 +1742,113 @@ body.ui-hidden #ui-hide-btn {
   box-shadow: 0 0 5px var(--neon-cyan);
   will-change: transform, opacity;
 }
+
+/* ─── Phone mode (.is-phone on body) ─────────────────────────────────────
+   Activated by detectPhone() in main.js. Hides desktop-only chrome, centers
+   the nameplate, exposes the stripped-down mobile panel, and locks the mic
+   as the only audio source. All overrides are additive — nothing in the
+   desktop layout is structurally removed.
+   ──────────────────────────────────────────────────────────────────────── */
+
+/* Desktop-only UI elements — gone on phone */
+.is-phone #lower-left        { display: none !important; }
+.is-phone #tuning-panel      { display: none !important; }
+.is-phone #help-btn          { display: none !important; }
+.is-phone #help-tooltip      { display: none !important; }
+.is-phone #cast-btn          { display: none !important; }
+.is-phone #cast-tooltip      { display: none !important; }
+.is-phone #mobile-notice     { display: none !important; }
+.is-phone #now-playing       { display: none !important; }
+.is-phone #spotify-tooltip   { display: none !important; }
+.is-phone #cursor            { display: none !important; }
+.is-phone .cursor-trail      { display: none !important; }
+
+/* Status bar — source label + stop only; hide audio sliders and play button */
+.is-phone #audio-controls    { display: none !important; }
+.is-phone #play-btn          { display: none !important; }
+
+/* Source picker — mic only */
+.is-phone .src-btn[data-src="system"]  { display: none !important; }
+.is-phone .src-btn[data-src="spotify"] { display: none !important; }
+.is-phone .src-btn.file-btn            { display: none !important; }
+
+/* Bigger tap target for the lone mic button */
+.is-phone .src-btn {
+  width: 220px;
+  padding: 16px 20px;
+}
+
+/* Nameplate — pulled out of #hud flow and centered at the top */
+.is-phone #header-card {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  text-align: center;
+}
+
+/* CTA — subtle dim text, just above the mobile panel */
+#mobile-cta {
+  display: none;
+}
+
+.is-phone #mobile-cta {
+  display: block;
+  position: fixed;
+  bottom: 258px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: "Share Tech Mono", monospace;
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: rgba(0, 240, 255, 0.32);
+  text-shadow: 0 0 10px rgba(0, 240, 255, 0.18);
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 10;
+}
+
+/* Mobile control panel — presets + palettes in scrollable rows */
+#mobile-panel {
+  display: none;
+}
+
+.is-phone #mobile-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  position: fixed;
+  bottom: 172px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: calc(100vw - 32px);
+  max-width: 420px;
+  background: rgba(10, 0, 30, 0.88);
+  border: 1px solid rgba(0, 240, 255, 0.18);
+  border-radius: 4px;
+  padding: 12px 14px;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 0 24px rgba(0, 240, 255, 0.07);
+  z-index: 10;
+}
+
+.mobile-panel-row {
+  display: flex;
+  gap: 7px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.mobile-panel-row::-webkit-scrollbar { display: none; }
+
+/* Slightly larger touch targets for mobile chips */
+.is-phone .preset-btn,
+.is-phone .palette-btn {
+  padding: 6px 14px;
+  font-size: 10px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
