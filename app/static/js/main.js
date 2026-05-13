@@ -31,6 +31,10 @@ const cursorEl   = document.getElementById("cursor");
 const cursorRing = document.getElementById("cursor-ring");
 let _cursorBeatTimer = 0;
 
+// ── cursor disruption ─────────────────────────────────────────
+const cursorDisruptBtn = document.getElementById("cursor-disrupt-btn");
+let _cursorDisruptActive = false;
+
 // XP-style cursor trail — ring buffer of recent mouse positions.
 const TRAIL_COUNT = 10;
 const _trailPos = Array.from({ length: TRAIL_COUNT }, () => ({ x: -200, y: -200 }));
@@ -46,6 +50,11 @@ document.addEventListener("mousemove", (e) => {
   // Shift position history: newest at front, oldest at back.
   _trailPos.unshift({ x: e.clientX, y: e.clientY });
   _trailPos.length = TRAIL_COUNT;
+  // Feed world-space cursor position to the disruption shader when active.
+  if (_cursorDisruptActive) {
+    const world = viz.screenToWorld(e.clientX, e.clientY);
+    viz.setCursorDisrupt(world, true);
+  }
 });
 document.addEventListener("mouseleave", () => { cursorEl.style.opacity = "0"; });
 document.addEventListener("mouseenter", () => { cursorEl.style.opacity = "1"; });
@@ -1057,6 +1066,13 @@ function applyUiHidden(on) {
 
 applyUiHidden(localStorage.getItem(UI_HIDE_KEY) === "1");
 uiHideBtn.addEventListener("click", () => applyUiHidden(!document.body.classList.contains("ui-hidden")));
+
+// Cursor disruption toggle — enables particle repulsion from the cursor position.
+cursorDisruptBtn.addEventListener("click", () => {
+  _cursorDisruptActive = !_cursorDisruptActive;
+  cursorDisruptBtn.classList.toggle("active", _cursorDisruptActive);
+  if (!_cursorDisruptActive) viz.setCursorDisrupt(null, false);
+});
 
 mobileDismiss.addEventListener("click", () => { mobileNotice.hidden = true; });
 
