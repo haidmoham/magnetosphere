@@ -152,7 +152,8 @@ export class Visualizer {
     this._cFog   = new THREE.Color();
 
     // Cloud animation params (live-editable via setTuning, c* prefix).
-    this.cBurstFreq = 0.08;   // scatter must fall below this before next burst fires
+    this.cBurstInterval = 2.5; // minimum seconds between bursts
+    this._lastBurstT    = -Infinity;
 
     // Floor tuning (live-editable via setTuning).
     Object.assign(this, FLOOR_DEFAULTS);
@@ -396,7 +397,8 @@ export class Visualizer {
 
     // Beat burst: fast radial punch, echo 200ms later, scatter: reform ~1.5s
     // Cooldown: don't re-trigger while still reforming from last beat
-    if (beat && u.uScatter.value < this.cBurstFreq) {
+    if (beat && (t - this._lastBurstT) > this.cBurstInterval && u.uScatter.value < 0.06) {
+      this._lastBurstT = t;
       u.uBurst.value   = 1.0;
       u.uScatter.value = 1.0;
       clearTimeout(this._echoTimer);
