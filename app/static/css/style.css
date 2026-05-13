@@ -596,6 +596,41 @@ body::after {
   transform: translateY(0);
 }
 
+/* Preset chips under the panel header. */
+.tuning-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 6px 0 4px;
+  border-bottom: 1px solid rgba(165, 102, 255, 0.12);
+}
+#tuning-panel.collapsed .tuning-presets { display: none; }
+
+.preset-btn {
+  appearance: none;
+  background: rgba(0, 240, 255, 0.05);
+  border: 1px solid rgba(0, 240, 255, 0.25);
+  border-radius: 2px;
+  padding: 3px 9px;
+  cursor: pointer;
+  font-family: "Orbitron", monospace;
+  font-weight: 700;
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  text-shadow: 0 0 4px rgba(0, 240, 255, 0.2);
+  transition: background 140ms ease, border-color 140ms ease,
+              color 140ms ease, text-shadow 140ms ease, transform 80ms ease;
+}
+.preset-btn:hover {
+  background: rgba(0, 240, 255, 0.15);
+  border-color: var(--neon-cyan);
+  color: var(--neon-cyan);
+  text-shadow: 0 0 6px rgba(0, 240, 255, 0.5);
+}
+.preset-btn:active { transform: translateY(1px); }
+
 /* Disclaimer under the panel header. */
 .tuning-hint {
   font-family: "Share Tech Mono", monospace;

@@ -203,6 +203,53 @@ tuningRandom.addEventListener("click", () => {
   document.querySelectorAll("#tuning-panel input[type=range]").forEach(randomizeSlider);
 });
 
+// ── Presets ─────────────────────────────────────────────────────────────
+// Each preset is a map of slider data-uniform → raw slider value. Missing
+// entries fall back to the HTML default. So "default" can be empty {}.
+const PRESETS = {
+  default: {},
+  starfield: {
+    uBreatheMin:    1.16,
+    uBreatheMax:    1.71,
+    uBreatheCurve:  0.35,
+    uSizeMin:       0.24,
+    uSizeMax:       1.72,
+    uSizeCurve:     2.65,
+    cBurstInterval: 5.00,
+    cRotateSpeed:   0.14,
+    fMaxH:         12,
+    fScroll:        5.5,
+    fScrollBass:   35,
+    fDecay:         0.67,
+    fHotCurve:      4.2,
+    bStrength:      0.395,   // raw — pow(0.395, 2.2) ≈ 0.13 displayed
+    bRadius:        0.39,
+    bThreshold:     0.71,
+    uShapeMix:      0.29,
+    eCycleSpeed:    0.00,
+    eBassHue:       0.10,
+    eTrebleHue:     0.10,
+    eSatReact:      0.25,
+    eBurstHue:      0.44,
+  },
+};
+
+function applyPreset(name) {
+  const preset = PRESETS[name];
+  if (!preset) return;
+  document.querySelectorAll("#tuning-panel input[type=range]").forEach((input) => {
+    const uniform = input.dataset.uniform;
+    const raw = (uniform in preset) ? preset[uniform] : parseFloat(input.defaultValue);
+    input.value = raw;
+    // Fire the input event so all wiring (transform, display, save, viz.setTuning) runs.
+    input.dispatchEvent(new Event("input"));
+  });
+}
+
+document.querySelectorAll("#tuning-panel .preset-btn").forEach((btn) => {
+  btn.addEventListener("click", () => applyPreset(btn.dataset.preset));
+});
+
 // Collapse / expand the tuning panel.
 const tuningPanel  = document.getElementById("tuning-panel");
 const tuningToggle = document.getElementById("tuning-toggle");
