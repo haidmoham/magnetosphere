@@ -35,8 +35,9 @@ export class BeatTracker {
     this.onError = null;  // (err: Error) => void
   }
 
-  get bpm()     { return this._bpm; }
-  get isReady() { return this._workletReady && this._bpm !== null; }
+  get bpm()        { return this._bpm; }
+  get intervalMs() { return this._intervalMs; }
+  get isReady()    { return this._workletReady && this._bpm !== null; }
 
   /**
    * Connect to a source node and begin beat detection.
