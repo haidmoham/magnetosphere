@@ -483,10 +483,18 @@ document.querySelectorAll("#tuning-panel .section-random").forEach((btn) => {
   });
 });
 
-// 🎲 overall randomize.
+// 🎲 overall randomize — sliders + palette + shape + stereo toggles.
 const tuningRandom = document.getElementById("tuning-random");
 tuningRandom.addEventListener("click", () => {
   document.querySelectorAll("#tuning-panel input[type=range]").forEach(randomizeSlider);
+  const palettes = ["synthwave", "inferno", "arctic", "toxic", "void", "ember"];
+  applyPalette(palettes[Math.floor(Math.random() * palettes.length)]);
+  const shapes = ["sphere", "heart", "torus", "galaxy", "cube", "helix"];
+  applyShape(shapes[Math.floor(Math.random() * shapes.length)]);
+  document.querySelectorAll(".stereo-btn").forEach((btn) => {
+    setStereo(btn.dataset.stereo, Math.random() < 0.5 ? 1 : 0);
+  });
+  localStorage.setItem(STEREO_KEY, JSON.stringify(savedStereo));
 });
 
 // Collapse / expand the tuning panel.
