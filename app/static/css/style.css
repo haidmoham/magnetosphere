@@ -1126,11 +1126,19 @@ body::after {
   text-shadow: 0 0 5px rgba(0, 240, 255, 0.5);
 }
 
-/* ─── zoom controls (under nameplate) ───────────────────────── */
-#zoom-controls {
+/* ─── lower-left row: zoom + hide-ui button ──────────────────── */
+#lower-left {
   position: fixed;
   top: 88px;
   left: 20px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  pointer-events: auto;
+  z-index: 11;
+}
+
+#zoom-controls {
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -1141,8 +1149,6 @@ body::after {
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
   box-shadow: 0 0 18px rgba(0, 240, 255, 0.08);
-  pointer-events: auto;
-  z-index: 11;
 }
 
 .zoom-label {
@@ -1339,8 +1345,8 @@ body::after {
 }
 
 /* ─── UI hide mode ───────────────────────────────────────────────────
-   body.ui-hidden collapses everything except #header-card + #zoom-controls.
-   The hide button lives inside the nameplate so it's always reachable.
+   body.ui-hidden collapses everything except #header-card + #lower-left.
+   The hide button sits in the lower-left row so it's always reachable.
    ──────────────────────────────────────────────────────────────────── */
 body.ui-hidden #source-picker,
 body.ui-hidden #status-bar,
@@ -1352,27 +1358,31 @@ body.ui-hidden #cast-tooltip {
   display: none !important;
 }
 
-/* Hide button — lives at the bottom of the nameplate card. */
+/* Hide button — standalone card in the lower-left row, same height as zoom. */
 #ui-hide-btn {
   appearance: none;
   cursor: pointer;
-  align-self: flex-start;
-  background: transparent;
+  display: inline-flex;
+  align-items: center;
+  background: rgba(10, 0, 30, 0.7);
   border: 1px solid rgba(0, 240, 255, 0.18);
-  border-radius: 2px;
-  color: rgba(246, 214, 255, 0.38);
-  font-family: "Share Tech Mono", monospace;
+  border-radius: 4px;
+  color: rgba(246, 214, 255, 0.45);
+  font-family: "Orbitron", monospace;
+  font-weight: 700;
   font-size: 9px;
-  letter-spacing: 0.18em;
+  letter-spacing: 0.22em;
   text-transform: uppercase;
-  padding: 3px 8px;
-  margin-top: 5px;
+  padding: 6px 10px;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  box-shadow: 0 0 18px rgba(0, 240, 255, 0.04);
   transition: color 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
 }
 #ui-hide-btn:hover {
   color: var(--neon-cyan);
   border-color: rgba(0, 240, 255, 0.45);
-  box-shadow: 0 0 8px rgba(0, 240, 255, 0.2);
+  box-shadow: 0 0 14px rgba(0, 240, 255, 0.2);
 }
 
 /* In hidden mode the button is the sole CTA — make it pulse so it's obvious. */
