@@ -47,8 +47,10 @@ const vertexShader = /* glsl */ `
   uniform float uSizeMin;
   uniform float uSizeMax;
   uniform float uSizeCurve;
+  uniform float uShapeMix;
   attribute float aSize;
   attribute vec3 aSeed;
+  attribute vec3 aPositionTarget;
   varying float vRadial;
   varying float vBright;
 
@@ -63,10 +65,12 @@ const vertexShader = /* glsl */ `
   }
 
   void main() {
-    float r = length(position);
+    // Morph between base shapes (sphere ↔ heart, etc).
+    vec3 basePos = mix(position, aPositionTarget, uShapeMix);
+    float r = length(basePos);
 
     // Flow field displacement — scales up with mid energy
-    vec3 pos = position + flowField(position, uTime) * (2.0 + uMid * 2.5);
+    vec3 pos = basePos + flowField(basePos, uTime) * (2.0 + uMid * 2.5);
 
     // Swirl rotation
     float angle = uTime * 0.04 + r * 0.012 + aSeed.x * 0.6;
@@ -85,7 +89,7 @@ const vertexShader = /* glsl */ `
     pos   += aSeed   * uTreble * 1.8;
 
     // Beat burst + echo — two radial shockwaves, echo slightly smaller
-    pos += normalize(position) * (uBurst * 28.0 + uEcho * 18.0);
+    pos += normalize(basePos) * (uBurst * 28.0 + uEcho * 18.0);
 
     // Scatter — each particle flies to its own random chaos position, then reforms
     vec3 scatterTarget = aSeed * 50.0;
@@ -300,32 +304,64 @@ export class Visualizer {
 
   // ── Particles ────────────────────────────────────────────────────────────
 
-  _buildParticles() {
-    const geo       = new THREE.BufferGeometry();
-    const positions = new Float32Array(PARTICLE_COUNT * 3);
-    const sizes     = new Float32Array(PARTICLE_COUNT);
-    const seeds     = new Float32Array(PARTICLE_COUNT * 3);
-
-    for (let i = 0; i < PARTICLE_COUNT; i++) {
+  // Sphere: thick shell, radii 25–55, weighted toward outer edge.
+  _sampleSphere(n) {
+    const out = new Float32Array(n * 3);
+    for (let i = 0; i < n; i++) {
       const u      = Math.random();
       const radius = 25 + Math.pow(u, 0.6) * 30;
       const theta  = Math.random() * Math.PI * 2;
       const phi    = Math.acos(2 * Math.random() - 1);
       const sinPhi = Math.sin(phi);
+      out[i * 3]     = radius * sinPhi * Math.cos(theta);
+      out[i * 3 + 1] = radius * Math.cos(phi);
+      out[i * 3 + 2] = radius * sinPhi * Math.sin(theta);
+    }
+    return out;
+  }
 
-      positions[i * 3]     = radius * sinPhi * Math.cos(theta);
-      positions[i * 3 + 1] = radius * Math.cos(phi);
-      positions[i * 3 + 2] = radius * sinPhi * Math.sin(theta);
+  // Heart: Taubin's implicit surface
+  //   (x² + (9/4)y² + z² − 1)³ − x²z³ − (9/80)y²z³ = 0
+  // Volume rejection sample in the unit bbox, then map heart's Z (point/cleft
+  // axis) to world Y so the heart stands upright, point down.
+  _sampleHeart(n) {
+    const out   = new Float32Array(n * 3);
+    const scale = 42;  // matches sphere visual extent
+    let i = 0;
+    while (i < n) {
+      const x = (Math.random() - 0.5) * 2.4;
+      const y = (Math.random() - 0.5) * 1.6;
+      const z = (Math.random() - 0.5) * 2.4;
+      const a = x * x + 2.25 * y * y + z * z - 1;
+      const f = a * a * a - x * x * z * z * z - 0.1125 * y * y * z * z * z;
+      if (f < 0) {
+        out[i * 3]     = x * scale;            // world X = heart X
+        out[i * 3 + 1] = z * scale;            // world Y = heart Z (cleft up, point down)
+        out[i * 3 + 2] = y * scale;            // world Z = heart Y (thickness)
+        i++;
+      }
+    }
+    return out;
+  }
 
+  _buildParticles() {
+    const geo       = new THREE.BufferGeometry();
+    const positions = this._sampleSphere(PARTICLE_COUNT);
+    const targets   = this._sampleHeart(PARTICLE_COUNT);
+    const sizes     = new Float32Array(PARTICLE_COUNT);
+    const seeds     = new Float32Array(PARTICLE_COUNT * 3);
+
+    for (let i = 0; i < PARTICLE_COUNT; i++) {
       sizes[i]         = 0.8 + Math.random() * 2.4;
       seeds[i * 3]     = (Math.random() - 0.5) * 2;
       seeds[i * 3 + 1] = (Math.random() - 0.5) * 2;
       seeds[i * 3 + 2] = (Math.random() - 0.5) * 2;
     }
 
-    geo.setAttribute("position", new THREE.BufferAttribute(positions, 3));
-    geo.setAttribute("aSize",    new THREE.BufferAttribute(sizes, 1));
-    geo.setAttribute("aSeed",    new THREE.BufferAttribute(seeds, 3));
+    geo.setAttribute("position",        new THREE.BufferAttribute(positions, 3));
+    geo.setAttribute("aPositionTarget", new THREE.BufferAttribute(targets,   3));
+    geo.setAttribute("aSize",           new THREE.BufferAttribute(sizes,     1));
+    geo.setAttribute("aSeed",           new THREE.BufferAttribute(seeds,     3));
 
     const mat = new THREE.ShaderMaterial({
       uniforms: {
@@ -345,6 +381,7 @@ export class Visualizer {
         uSizeMin:      { value: 0.14 },
         uSizeMax:      { value: 1.60 },
         uSizeCurve:    { value: 3.00 },
+        uShapeMix:     { value: 0.00 },   // 0 = sphere, 1 = heart
       },
       vertexShader,
       fragmentShader,
