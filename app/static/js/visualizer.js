@@ -320,26 +320,27 @@ export class Visualizer {
     return out;
   }
 
-  // Heart: Taubin's implicit surface
-  //   (x² + (9/4)y² + z² − 1)³ − x²z³ − (9/80)y²z³ = 0
-  // Volume rejection sample in the unit bbox, then map heart's Z (point/cleft
-  // axis) to world Y so the heart stands upright, point down.
+  // Heart: 2D implicit heart curve  (x² + y² − 1)³ − x²y³ = 0  extruded into Z.
+  // Cleft at y = +1, point at y ≈ −1, lobes spread along ±x. The 2D silhouette
+  // is much more recognizable than Taubin's 3D heart whose shallow cleft gets
+  // smeared out by volume sampling. A puffy z-thickness gives it 3D depth.
   _sampleHeart(n) {
     const out   = new Float32Array(n * 3);
-    const scale = 42;  // matches sphere visual extent
+    const scale = 36;
     let i = 0;
     while (i < n) {
-      const x = (Math.random() - 0.5) * 2.4;
-      const y = (Math.random() - 0.5) * 1.6;
-      const z = (Math.random() - 0.5) * 2.4;
-      const a = x * x + 2.25 * y * y + z * z - 1;
-      const f = a * a * a - x * x * z * z * z - 0.1125 * y * y * z * z * z;
-      if (f < 0) {
-        out[i * 3]     = x * scale;            // world X = heart X
-        out[i * 3 + 1] = z * scale;            // world Y = heart Z (cleft up, point down)
-        out[i * 3 + 2] = y * scale;            // world Z = heart Y (thickness)
-        i++;
-      }
+      const x = (Math.random() - 0.5) * 2.6;
+      const y = (Math.random() - 0.5) * 2.6;
+      const a = x * x + y * y - 1;
+      const f = a * a * a - x * x * y * y * y;
+      if (f >= 0) continue;
+      // Puffy 3D thickness — scales with how deep inside the 2D heart we are.
+      const thick = 0.55 * Math.sqrt(Math.max(0, -f / 0.4));
+      const z     = (Math.random() * 2 - 1) * Math.min(thick, 0.7);
+      out[i * 3]     = x * scale;            // world X = heart X (width / lobe axis)
+      out[i * 3 + 1] = y * scale;            // world Y = heart Y (cleft up, point down)
+      out[i * 3 + 2] = z * scale;            // world Z = thickness
+      i++;
     }
     return out;
   }
