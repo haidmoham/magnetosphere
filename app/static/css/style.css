@@ -1623,3 +1623,18 @@ body.ui-hidden #ui-hide-btn {
   opacity: 0.2;
   border-color: rgba(0, 240, 255, 0.8);
 }
+
+/* XP-style cursor trail ghosts */
+.cursor-trail {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 5px;
+  height: 5px;
+  background: var(--neon-cyan);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 99998;
+  box-shadow: 0 0 5px var(--neon-cyan);
+  will-change: transform, opacity;
+}
