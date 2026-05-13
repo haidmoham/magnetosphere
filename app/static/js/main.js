@@ -231,6 +231,23 @@ tuningToggle.addEventListener("click", () => {
   );
 });
 
+// Simple ↔ advanced view. Simple = chip rows + stereo only. Advanced =
+// expands the slider body. Default is simple to keep the menu uncluttered;
+// power users explicitly opt into the sliders, and the choice persists.
+const tuningDetails       = document.getElementById("tuning-details");
+const TUNING_ADVANCED_KEY = "voidpulse.tuning.advanced";
+
+function applyAdvancedMode(on) {
+  tuningPanel.classList.toggle("advanced", on);
+  tuningDetails.textContent = on ? "▾ advanced" : "▸ advanced";
+  localStorage.setItem(TUNING_ADVANCED_KEY, on ? "1" : "0");
+}
+
+applyAdvancedMode(localStorage.getItem(TUNING_ADVANCED_KEY) === "1");
+tuningDetails.addEventListener("click", () => {
+  applyAdvancedMode(!tuningPanel.classList.contains("advanced"));
+});
+
 // Reset all sliders to their HTML default values and clear persisted state.
 tuningReset.addEventListener("click", () => {
   document.querySelectorAll("#tuning-panel input[type=range]").forEach((input) => {

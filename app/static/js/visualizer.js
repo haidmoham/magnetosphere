@@ -235,6 +235,14 @@ export class Visualizer {
     this.cAttrCount  = 2;   // active wells (0–4); tuning panel "count" slider
     this.cAttrRadius = 55;  // orbit radius; tuning panel "orbit radius" slider
 
+    // Shape transition state — driven by setShape(). uShapeMix lerps to
+    // _shapeMixTarget each frame; when it crosses below 0.05 with a pending
+    // shape change queued, the target buffer is rebuilt and lerp resumes to 1.
+    this._shapeCurrent   = "sphere";
+    this._pendingShape   = null;
+    this._shapeMixTarget = 0;
+    this._shapeMixCurrent = 0;
+
     // Color entropy params (e* prefix).
     this.eCycleSpeed = 0.00;   // base hue drift rate (hue units/sec)
     this.eBassHue    = 0.10;   // bass energy → outer hue shift
@@ -435,11 +443,126 @@ export class Visualizer {
     return out;
   }
 
+  // Torus: clean donut, R = ring radius, r = tube radius (proportional).
+  _sampleTorus(n, R) {
+    const out = new Float32Array(n * 3);
+    const r   = R * 0.32;
+    for (let i = 0; i < n; i++) {
+      const u = Math.random() * Math.PI * 2;
+      const v = Math.random() * Math.PI * 2;
+      const cu = Math.cos(u), su = Math.sin(u);
+      const cv = Math.cos(v), sv = Math.sin(v);
+      out[i * 3]     = (R + r * cv) * cu;
+      out[i * 3 + 1] = r * sv;
+      out[i * 3 + 2] = (R + r * cv) * su;
+    }
+    return out;
+  }
+
+  // Galaxy: 3-arm log-spiral disk. Particles weighted toward outer edge,
+  // flattened on Y, with per-particle noise to thicken each spiral arm.
+  _sampleGalaxy(n, R) {
+    const out  = new Float32Array(n * 3);
+    const arms = 3;
+    for (let i = 0; i < n; i++) {
+      const u    = Math.pow(Math.random(), 0.55);   // weight outward
+      const r    = u * R;
+      const arm  = (Math.floor(Math.random() * arms) / arms) * Math.PI * 2;
+      const wind = u * Math.PI * 1.6;               // spiral tightness
+      const fuzz = (Math.random() - 0.5) * 0.55 * (1 - u * 0.6); // arm spread
+      const th   = arm + wind + fuzz;
+      out[i * 3]     = Math.cos(th) * r;
+      out[i * 3 + 1] = (Math.random() - 0.5) * R * 0.07;  // thin disk
+      out[i * 3 + 2] = Math.sin(th) * r;
+    }
+    return out;
+  }
+
+  // Cube: particles on 6 faces. Random face pick, then 2D position on that face.
+  _sampleCube(n, half) {
+    const out = new Float32Array(n * 3);
+    for (let i = 0; i < n; i++) {
+      const face = Math.floor(Math.random() * 6);
+      const a = (Math.random() * 2 - 1) * half;
+      const b = (Math.random() * 2 - 1) * half;
+      let x = 0, y = 0, z = 0;
+      switch (face) {
+        case 0: x =  half; y = a;    z = b;    break;
+        case 1: x = -half; y = a;    z = b;    break;
+        case 2: x = a;     y =  half; z = b;   break;
+        case 3: x = a;     y = -half; z = b;   break;
+        case 4: x = a;     y = b;    z =  half; break;
+        case 5: x = a;     y = b;    z = -half; break;
+      }
+      out[i * 3]     = x;
+      out[i * 3 + 1] = y;
+      out[i * 3 + 2] = z;
+    }
+    return out;
+  }
+
+  // Helix: two parallel strands wound around a vertical axis with visible thickness.
+  _sampleHelix(n, scale) {
+    const out    = new Float32Array(n * 3);
+    const turns  = 3.5;
+    const radius = scale * 0.40;
+    const height = scale * 1.9;
+    for (let i = 0; i < n; i++) {
+      const strand = Math.floor(Math.random() * 2);
+      const t      = Math.random();
+      const baseAng = t * turns * Math.PI * 2 + strand * Math.PI;
+      // Scatter perpendicular to the strand for visible thickness.
+      const sR  = scale * 0.045 * Math.sqrt(Math.random());
+      const sAn = Math.random() * Math.PI * 2;
+      out[i * 3]     = Math.cos(baseAng) * radius + sR * Math.cos(sAn);
+      out[i * 3 + 1] = (t - 0.5) * height;
+      out[i * 3 + 2] = Math.sin(baseAng) * radius + sR * Math.sin(sAn);
+    }
+    return out;
+  }
+
+  // Sample any registered shape into a Float32Array of length n*3.
+  // Scale is the rough overall radius/half-extent for that shape.
+  _sampleShape(name, n, scale) {
+    switch (name) {
+      case "sphere": return this._sampleSphereRange(n, scale * 0.65, scale);
+      case "heart":  return this._sampleHeart(n, scale);
+      case "torus":  return this._sampleTorus(n, scale);
+      case "galaxy": return this._sampleGalaxy(n, scale * 1.25);
+      case "cube":   return this._sampleCube(n, scale * 0.85);
+      case "helix":  return this._sampleHelix(n, scale * 1.05);
+      default:       return this._sampleHeart(n, scale);
+    }
+  }
+
+  // Rebuild the morph-target buffer with a new shape, in place. Inner shell
+  // gets the tight version, outer gets the larger version. Cheap (~720KB write).
+  _rebuildShapeTarget(name) {
+    if (name === "sphere") return;  // no rebuild needed — uShapeMix → 0 hides target
+    const INNER = this._innerCount;
+    const OUTER = PARTICLE_COUNT - INNER;
+    const innerTgt = this._sampleShape(name, INNER, 26);
+    const outerTgt = this._sampleShape(name, OUTER, 46);
+    const buf = this._targetAttr.array;
+    buf.set(innerTgt, 0);
+    buf.set(outerTgt, INNER * 3);
+    this._targetAttr.needsUpdate = true;
+  }
+
+  // Public: switch to a new shape. Animation routes through sphere
+  // (uShapeMix → 0, rebuild target, uShapeMix → 1) for a clean transition.
+  setShape(name) {
+    if (this._shapeCurrent === name && !this._pendingShape) return;
+    this._pendingShape  = name;
+    this._shapeMixTarget = 0;
+  }
+
   _buildParticles() {
     // Two concentric shells: inner (bass-anchored core) + outer (flow-driven envelope).
     // Inner: 55% of particles, radii 18–36. Outer: 45%, radii 44–66.
     const INNER = Math.floor(PARTICLE_COUNT * 0.55);
     const OUTER = PARTICLE_COUNT - INNER;
+    this._innerCount = INNER;
 
     const innerPos = this._sampleSphereRange(INNER, 18, 36);
     const outerPos = this._sampleSphereRange(OUTER, 44, 66);
@@ -467,8 +590,13 @@ export class Visualizer {
       layers[i]        = i < INNER ? 0.0 : 1.0;
     }
 
+    // Target buffer must be dynamic — `setShape()` rewrites it on demand.
+    const targetAttr = new THREE.BufferAttribute(targets, 3);
+    targetAttr.setUsage(THREE.DynamicDrawUsage);
+    this._targetAttr = targetAttr;
+
     geo.setAttribute("position",        new THREE.BufferAttribute(positions, 3));
-    geo.setAttribute("aPositionTarget", new THREE.BufferAttribute(targets,   3));
+    geo.setAttribute("aPositionTarget", targetAttr);
     geo.setAttribute("aSize",           new THREE.BufferAttribute(sizes,     1));
     geo.setAttribute("aSeed",           new THREE.BufferAttribute(seeds,     3));
     geo.setAttribute("aLayer",          new THREE.BufferAttribute(layers,    1));
