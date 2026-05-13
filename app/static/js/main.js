@@ -177,6 +177,32 @@ document.querySelectorAll("#tuning-panel .section-label").forEach((header) => {
   });
 });
 
+// Helper: pick a random value within a slider's range (snapped to step), then
+// fire the input event so all the existing wiring (transform, display, save,
+// viz.setTuning) runs.
+function randomizeSlider(input) {
+  const min  = parseFloat(input.min);
+  const max  = parseFloat(input.max);
+  const step = parseFloat(input.step) || 0.01;
+  const v    = min + Math.random() * (max - min);
+  input.value = Math.round(v / step) * step;
+  input.dispatchEvent(new Event("input"));
+}
+
+// 🎲 per-section randomize buttons.
+document.querySelectorAll("#tuning-panel .section-random").forEach((btn) => {
+  const section = btn.closest(".tuning-section");
+  btn.addEventListener("click", () => {
+    section.querySelectorAll("input[type=range]").forEach(randomizeSlider);
+  });
+});
+
+// 🎲 overall randomize.
+const tuningRandom = document.getElementById("tuning-random");
+tuningRandom.addEventListener("click", () => {
+  document.querySelectorAll("#tuning-panel input[type=range]").forEach(randomizeSlider);
+});
+
 // Collapse / expand the tuning panel.
 const tuningPanel  = document.getElementById("tuning-panel");
 const tuningToggle = document.getElementById("tuning-toggle");
