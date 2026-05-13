@@ -701,6 +701,29 @@ zoomOutBtn.addEventListener("click", () => {
 
 applyZoom();
 
+// UI hide toggle — collapses everything except the nameplate and zoom control.
+// The hide button lives inside the nameplate so it's reachable in both states.
+// In hidden mode the button pulses neon pink so it's an obvious CTA to restore.
+const uiHideBtn   = document.getElementById("ui-hide-btn");
+const UI_HIDE_KEY = "voidpulse.ui-hidden";
+
+function applyUiHidden(on) {
+  document.body.classList.toggle("ui-hidden", on);
+  uiHideBtn.textContent = on ? "⊕ show ui" : "⊘ hide ui";
+  uiHideBtn.title = on
+    ? "Show all UI controls"
+    : "Hide all UI — only nameplate and zoom remain";
+  // Close any open tooltips so they don't linger after hiding.
+  if (on) {
+    helpTooltip.hidden = true;
+    castTooltip.hidden = true;
+  }
+  localStorage.setItem(UI_HIDE_KEY, on ? "1" : "0");
+}
+
+applyUiHidden(localStorage.getItem(UI_HIDE_KEY) === "1");
+uiHideBtn.addEventListener("click", () => applyUiHidden(!document.body.classList.contains("ui-hidden")));
+
 mobileDismiss.addEventListener("click", () => { mobileNotice.hidden = true; });
 
 helpBtn.addEventListener("click", (e) => {
