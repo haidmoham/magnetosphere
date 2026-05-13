@@ -1154,6 +1154,28 @@ if (IS_PHONE) {
     tuningReset.click();
     applyShape("heart", false);
   });
+
+  // Disrupt — toggle mode, then touch the canvas to push particles.
+  const mobileDisruptBtn = document.getElementById("mobile-disrupt-btn");
+  mobileDisruptBtn.addEventListener("click", () => {
+    _cursorDisruptActive = !_cursorDisruptActive;
+    mobileDisruptBtn.classList.toggle("active", _cursorDisruptActive);
+    if (!_cursorDisruptActive) viz.setCursorDisrupt(null, false);
+  });
+
+  // Touch events on canvas drive the disrupt world position.
+  function handleTouchDisrupt(e) {
+    if (!_cursorDisruptActive) return;
+    e.preventDefault();
+    const t = e.touches[0];
+    if (!t) return;
+    const world = viz.screenToWorld(t.clientX, t.clientY);
+    viz.setCursorDisrupt(world, true);
+  }
+  canvas.addEventListener("touchstart",  handleTouchDisrupt, { passive: false });
+  canvas.addEventListener("touchmove",   handleTouchDisrupt, { passive: false });
+  canvas.addEventListener("touchend",    () => { if (_cursorDisruptActive) viz.setCursorDisrupt(null, false); }, { passive: true });
+  canvas.addEventListener("touchcancel", () => { if (_cursorDisruptActive) viz.setCursorDisrupt(null, false); }, { passive: true });
 }
 
 refreshUi();

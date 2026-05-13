@@ -1917,6 +1917,26 @@ body.ui-hidden #ui-hide-btn {
 }
 #mobile-reset-btn:active { color: rgba(246, 214, 255, 0.7); }
 
+#mobile-disrupt-btn {
+  appearance: none;
+  background: transparent;
+  border: none;
+  color: rgba(0, 240, 255, 0.35);
+  font-family: "Orbitron", monospace;
+  font-weight: 700;
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  cursor: pointer;
+  padding: 4px 0;
+  transition: color 140ms ease;
+}
+#mobile-disrupt-btn:active { color: rgba(0, 240, 255, 0.7); }
+#mobile-disrupt-btn.active {
+  color: var(--neon-cyan);
+  text-shadow: 0 0 8px rgba(0, 240, 255, 0.6);
+}
+
 .mobile-zoom-group {
   display: flex;
   align-items: center;
