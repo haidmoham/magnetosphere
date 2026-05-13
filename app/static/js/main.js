@@ -1,6 +1,6 @@
 import { AudioEngine } from "./audio.js";
 import { Visualizer } from "./visualizer.js";
-import { SpotifyEngine } from "./spotify.js";
+import { SpotifyWatcher } from "./spotify.js";
 
 const canvas = document.getElementById("stage");
 const sourcePicker = document.getElementById("source-picker");
@@ -24,7 +24,7 @@ const zoomValue   = document.getElementById("zoom-value");
 
 const audio   = new AudioEngine();
 const viz     = new Visualizer(canvas);
-const spotify = new SpotifyEngine();
+const spotify = new SpotifyWatcher();
 const spotifyBtn = document.querySelector('.src-btn[data-src="spotify"]');
 
 // Photosensitivity warning — shown once per browser session.
@@ -53,21 +53,21 @@ function refreshUi() {
     const src = btn.dataset.src || (btn.classList.contains("file-btn") ? "file" : "");
     btn.classList.toggle("active", audio.mode === src);
   });
-  // Volume slider is active for any source where we control output gain:
-  // local file (via gainNode) and spotify (via SDK player.setVolume).
-  const volActive = audio.mode === "file" || audio.mode === "spotify";
-  volRow.classList.toggle("ctrl-disabled", !volActive);
-  volSlider.disabled = !volActive;
+  // Volume slider only applies to local file playback. Mic/tab don't have
+  // a controllable output (we don't route them to destination), and Spotify
+  // volume lives in the user's actual Spotify client, not here.
   const isFile = audio.mode === "file";
+  volRow.classList.toggle("ctrl-disabled", !isFile);
+  volSlider.disabled = !isFile;
 
   if (isFile) {
     playBtn.hidden = false;
     playBtn.textContent = audio.isPlaying() ? "pause" : "play";
     stopBtn.hidden = false;
   } else if (audio.mode === "spotify") {
-    // SDK handles playback; play button toggles it.
-    playBtn.hidden = false;
-    playBtn.textContent = spotifyIsPaused ? "play" : "pause";
+    // User controls playback in their own Spotify app — only show stop
+    // (disconnect from the listening session).
+    playBtn.hidden = true;
     stopBtn.hidden = false;
   } else if (audio.mode === "mic" || audio.mode === "system") {
     playBtn.hidden = true;
@@ -77,9 +77,6 @@ function refreshUi() {
     stopBtn.hidden = true;
   }
 }
-
-// Tracks Spotify SDK player state — refreshUi reads this to label the play btn.
-let spotifyIsPaused = true;
 
 sourcePicker.addEventListener("click", async (e) => {
   const btn = e.target.closest(".src-btn");
@@ -129,42 +126,41 @@ async function handleSpotifyClick() {
   await activateSpotify();
 }
 
+// Format a track for the source label.
+function formatTrackLabel({ track, device, isPlaying }) {
+  if (!track) return "spotify · play something in your spotify app";
+  const artists = (track.artists || []).map(a => a.name).join(", ");
+  const status  = isPlaying ? "" : " (paused)";
+  const where   = device?.name ? ` · ${device.name}` : "";
+  return `spotify · ${track.name}${artists ? " — " + artists : ""}${status}${where}`;
+}
+
 async function activateSpotify() {
   try {
-    spotifyBtn.querySelector(".hint").textContent = "connecting…";
     await audio.useSpotify("spotify · connecting");
     refreshUi();
 
-    // Hooks before init so we don't miss the first ready / state-change event.
-    spotify.onReady = async () => {
-      try {
-        await spotify.transferToThisDevice(false);
-        // Sync the player to whatever the slider currently shows so the
-        // saved volume actually takes effect (SDK default is 0.7).
-        await spotify.setVolume(parseFloat(volSlider.value));
-        audio.label = "spotify · ready";
-      } catch (err) {
-        showError(`Spotify transfer failed: ${err.message || err}`);
-      }
+    spotify.onTrackChange  = (track, device) => {
+      audio.label = formatTrackLabel({ track, device, isPlaying: spotify.isPlaying });
       refreshUi();
     };
-    spotify.onTrackChange = (track) => {
-      const artists = (track.artists || []).map(a => a.name).join(", ");
-      audio.label = `spotify · ${track.name}${artists ? " — " + artists : ""}`;
+    spotify.onStateChange  = (state) => {
+      audio.label = formatTrackLabel(state);
       refreshUi();
     };
-    spotify.onStateChange = (state) => {
-      spotifyIsPaused = !!state.paused;
-      refreshUi();
+    spotify.onAnalysisLoad = () => {
+      // Beat scheduler now active — no UI signal needed, the cloud reacting
+      // to the music is the signal.
     };
     spotify.onError = ({ type, message }) => {
-      showError(`Spotify ${type.replace(/_/g, " ")}: ${message}`);
+      // Polling errors are common and transient (network blips, token edge
+      // cases) — only surface non-poll errors so we don't spam the toast.
+      if (type !== "poll") showError(`Spotify ${type.replace(/_/g, " ")}: ${message}`);
     };
 
-    await spotify.init();
+    await spotify.start();
   } catch (err) {
     showError(err.message || String(err));
-    spotifyBtn.querySelector(".hint").textContent = "connect spotify · beat-synced";
   }
 }
 
@@ -176,12 +172,7 @@ async function activateSpotify() {
     showError(`Spotify auth: ${params.get("spotify_error")}`);
   }
   const status = await probeSpotify();
-  if (status.configured) {
-    spotifyBtn.hidden = false;
-    if (status.authenticated) {
-      spotifyBtn.querySelector(".hint").textContent = "play through spotify · beat-synced";
-    }
-  }
+  if (status.configured) spotifyBtn.hidden = false;
   if (params.has("spotify")) {
     // Strip the param from the URL bar so reloads don't re-trigger.
     history.replaceState({}, "", location.pathname);
@@ -216,7 +207,7 @@ playBtn.addEventListener("click", async () => {
 
 stopBtn.addEventListener("click", async () => {
   if (audio.mode === "spotify") {
-    await spotify.disconnect();
+    spotify.stop();
   } else {
     audio.pause();
   }
@@ -225,14 +216,25 @@ stopBtn.addEventListener("click", async () => {
 });
 
 function frame() {
-  const bands = audio.bands();
+  let bands, beat;
+  if (audio.mode === "spotify") {
+    // Spotify mode: bands + beats come from the audio-analysis scheduler.
+    // Stereo split is unavailable (no per-channel data); the visualizer
+    // just behaves as mono in this mode.
+    const tick = spotify.tick();
+    bands = tick.bands;
+    beat  = tick.beat;
+  } else {
+    bands = audio.bands();
+    beat  = audio.beat();
+  }
   const stereo = {
     bandsL:    audio.bandsL(),
     bandsR:    audio.bandsR(),
     freqDataL: audio.rawFreqL(),
     freqDataR: audio.rawFreqR(),
   };
-  viz.render(bands, audio.rawFreq(), audio.beat(), stereo);
+  viz.render(bands, audio.rawFreq(), beat, stereo);
   requestAnimationFrame(frame);
 }
 
@@ -757,8 +759,7 @@ if (!isNaN(savedVol)) { volSlider.value = savedVol; }
 audio.setVolume(parseFloat(volSlider.value));
 volSlider.addEventListener("input", () => {
   const v = parseFloat(volSlider.value);
-  audio.setVolume(v);           // file mode: drives the gainNode
-  if (audio.mode === "spotify") spotify.setVolume(v);
+  audio.setVolume(v);
   localStorage.setItem(VOL_KEY, v);
 });
 
