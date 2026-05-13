@@ -211,54 +211,6 @@ tuningRandom.addEventListener("click", () => {
   document.querySelectorAll("#tuning-panel input[type=range]").forEach(randomizeSlider);
 });
 
-// ── Presets ─────────────────────────────────────────────────────────────
-// Each preset is a map of slider data-uniform → raw slider value. Missing
-// entries fall back to the HTML default. Starfield matches HTML defaults
-// (so it's empty); heart has explicit values.
-const PRESETS = {
-  starfield: {},
-  heart: {
-    uBreatheMin:    0.35,
-    uBreatheMax:    2.50,
-    uBreatheCurve:  2.35,
-    uSizeMin:       0.14,
-    uSizeMax:       2.15,
-    uSizeCurve:     3.00,
-    cBurstInterval: 0.5,
-    cRotateSpeed:   0.06,
-    fMaxH:         30,
-    fScroll:        5,
-    fScrollBass:   22,
-    fDecay:         0.80,
-    fHotCurve:      2.5,
-    bStrength:      0.48,    // raw — pow(0.48, 2.2) ≈ 0.20 displayed
-    bRadius:        0.25,
-    bThreshold:     0.38,
-    uShapeMix:      1.0,
-    eCycleSpeed:    0.05,
-    eBassHue:       0.50,
-    eTrebleHue:     0.10,
-    eSatReact:      0.30,
-    eBurstHue:      0.50,
-  },
-};
-
-function applyPreset(name) {
-  const preset = PRESETS[name];
-  if (!preset) return;
-  document.querySelectorAll("#tuning-panel input[type=range]").forEach((input) => {
-    const uniform = input.dataset.uniform;
-    const raw = (uniform in preset) ? preset[uniform] : parseFloat(input.defaultValue);
-    input.value = raw;
-    // Fire the input event so all wiring (transform, display, save, viz.setTuning) runs.
-    input.dispatchEvent(new Event("input"));
-  });
-}
-
-document.querySelectorAll("#tuning-panel .preset-btn").forEach((btn) => {
-  btn.addEventListener("click", () => applyPreset(btn.dataset.preset));
-});
-
 // Collapse / expand the tuning panel.
 const tuningPanel  = document.getElementById("tuning-panel");
 const tuningToggle = document.getElementById("tuning-toggle");
@@ -290,29 +242,227 @@ tuningReset.addEventListener("click", () => {
   localStorage.removeItem(TUNING_KEY);
 });
 
-// Stereo toggles — three independent on/off switches for hemisphere split,
-// floor split, and color divergence. Persist across reloads.
+// ── Stereo toggles ────────────────────────────────────────────────────────
+// Three independent on/off switches for particle hemisphere split, floor
+// channel split, and color divergence. Persist across reloads.
 const STEREO_KEY = "voidpulse.stereo.v1";
 const savedStereo = JSON.parse(localStorage.getItem(STEREO_KEY) || "{}");
 
+// Push a single stereo toggle to its visual + viz state. Doesn't persist —
+// callers batch the localStorage write so a preset load only writes once.
+function setStereo(uniform, value) {
+  const btn = document.querySelector(`.stereo-btn[data-stereo="${uniform}"]`);
+  if (!btn) return;
+  const next = value ? 1 : 0;
+  btn.dataset.on = next;
+  btn.textContent = next ? "stereo" : "mono";
+  btn.classList.toggle("on", next === 1);
+  viz.setTuning(uniform, next);
+  savedStereo[uniform] = next;
+}
+
 document.querySelectorAll(".stereo-btn").forEach((btn) => {
   const uniform = btn.dataset.stereo;
-  const restored = savedStereo[uniform] === 1 ? 1 : 0;
-  btn.dataset.on = restored;
-  btn.textContent = restored ? "stereo" : "mono";
-  btn.classList.toggle("on", restored === 1);
-  viz.setTuning(uniform, restored);
+  setStereo(uniform, savedStereo[uniform] === 1 ? 1 : 0);
 
   btn.addEventListener("click", () => {
-    const next = btn.dataset.on === "1" ? 0 : 1;
-    btn.dataset.on = next;
-    btn.textContent = next ? "stereo" : "mono";
-    btn.classList.toggle("on", next === 1);
-    viz.setTuning(uniform, next);
-    savedStereo[uniform] = next;
+    setStereo(uniform, btn.dataset.on === "1" ? 0 : 1);
     localStorage.setItem(STEREO_KEY, JSON.stringify(savedStereo));
   });
 });
+
+// ── Presets, save slots, URL-hash sharing ─────────────────────────────────
+// Everything "preset-like" is captured in one state shape:
+//   { sliders: { uniform → raw }, stereo: { uniform → 0|1 } }
+// captureState() reads it from the live UI. applyState() pushes it back
+// through dispatchEvent('input') so localStorage + display values + shader
+// uniforms all stay in sync without re-implementing that wiring.
+function captureState() {
+  const sliders = {};
+  document.querySelectorAll("#tuning-panel input[type=range]").forEach((input) => {
+    sliders[input.dataset.uniform] = parseFloat(input.value);
+  });
+  const stereo = {};
+  document.querySelectorAll(".stereo-btn").forEach((btn) => {
+    stereo[btn.dataset.stereo] = parseInt(btn.dataset.on, 10) || 0;
+  });
+  return { sliders, stereo };
+}
+
+function applyState(state) {
+  if (!state) return;
+  if (state.sliders) {
+    document.querySelectorAll("#tuning-panel input[type=range]").forEach((input) => {
+      const uniform = input.dataset.uniform;
+      const raw = (uniform in state.sliders)
+        ? state.sliders[uniform]
+        : parseFloat(input.defaultValue);
+      input.value = raw;
+      input.dispatchEvent(new Event("input")); // updates display, viz, localStorage
+    });
+  }
+  if (state.stereo) {
+    document.querySelectorAll(".stereo-btn").forEach((btn) => {
+      const uniform = btn.dataset.stereo;
+      const val = (uniform in state.stereo) ? state.stereo[uniform] : 0;
+      setStereo(uniform, val);
+    });
+    localStorage.setItem(STEREO_KEY, JSON.stringify(savedStereo));
+  }
+}
+
+// Five curated presets, each with a distinct visual character. Missing
+// slider/stereo keys fall back to HTML defaults / mono.
+const PRESETS = {
+  starfield: {
+    sliders: {}, // all HTML defaults
+    stereo: { uStereoParticles: 0, fStereoFloor: 0, eStereoColor: 0 },
+  },
+  heart: {
+    sliders: {
+      uBreatheMin: 0.35, uBreatheMax: 2.50, uBreatheCurve: 2.35,
+      uSizeMin:    0.14, uSizeMax:    2.15, uSizeCurve:    3.00,
+      cBurstInterval: 0.5, cRotateSpeed: 0.06,
+      fMaxH: 30, fScroll: 5, fScrollBass: 22, fDecay: 0.80, fHotCurve: 2.5,
+      bStrength: 0.48, bRadius: 0.25, bThreshold: 0.38,
+      uShapeMix: 1.0,
+      eCycleSpeed: 0.05, eBassHue: 0.50, eTrebleHue: 0.10, eSatReact: 0.30, eBurstHue: 0.50,
+    },
+    stereo: { uStereoParticles: 0, fStereoFloor: 0, eStereoColor: 0 },
+  },
+  nebula: {
+    // Dreamy soft-glow cloud: gentle breathe, slow rotation, low floor,
+    // high bloom, stereo color split for cyan/pink hemisphere tint.
+    sliders: {
+      uBreatheMin: 0.55, uBreatheMax: 1.80, uBreatheCurve: 1.40,
+      uSizeMin:    0.35, uSizeMax:    2.00, uSizeCurve:    1.50,
+      cBurstInterval: 3.5, cRotateSpeed: 0.04,
+      fMaxH: 8, fScroll: 1.5, fScrollBass: 6, fDecay: 0.92, fHotCurve: 2.0,
+      bStrength: 0.72, bRadius: 0.55, bThreshold: 0.25,
+      uShapeMix: 0,
+      eCycleSpeed: 0.04, eBassHue: 0.30, eTrebleHue: 0.20, eSatReact: 0.50, eBurstHue: 0.25,
+    },
+    stereo: { uStereoParticles: 0, fStereoFloor: 0, eStereoColor: 1 },
+  },
+  storm: {
+    // Aggressive/snappy: fast bursts, fast spin, fast bass-scroll floor,
+    // sharp decay, all stereo channels engaged.
+    sliders: {
+      uBreatheMin: 0.40, uBreatheMax: 2.20, uBreatheCurve: 0.80,
+      uSizeMin:    0.18, uSizeMax:    1.50, uSizeCurve:    2.20,
+      cBurstInterval: 0.8, cRotateSpeed: 0.32,
+      fMaxH: 38, fScroll: 9, fScrollBass: 55, fDecay: 0.58, fHotCurve: 4.7,
+      bStrength: 0.42, bRadius: 0.30, bThreshold: 0.55,
+      uShapeMix: 0,
+      eCycleSpeed: 0.015, eBassHue: 0.42, eTrebleHue: 0.18, eSatReact: 0.65, eBurstHue: 0.40,
+    },
+    stereo: { uStereoParticles: 1, fStereoFloor: 1, eStereoColor: 1 },
+  },
+  vapor: {
+    // Slow + deep + half-heart: long burst interval, deep saturation, slow
+    // color cycle, stereo floor only.
+    sliders: {
+      uBreatheMin: 0.30, uBreatheMax: 1.60, uBreatheCurve: 2.60,
+      uSizeMin:    0.45, uSizeMax:    1.90, uSizeCurve:    2.30,
+      cBurstInterval: 6.0, cRotateSpeed: 0.05,
+      fMaxH: 22, fScroll: 2.5, fScrollBass: 15, fDecay: 0.90, fHotCurve: 2.2,
+      bStrength: 0.58, bRadius: 0.48, bThreshold: 0.42,
+      uShapeMix: 0.55,
+      eCycleSpeed: 0.025, eBassHue: 0.45, eTrebleHue: 0.06, eSatReact: 0.38, eBurstHue: 0.42,
+    },
+    stereo: { uStereoParticles: 0, fStereoFloor: 1, eStereoColor: 0 },
+  },
+};
+
+function applyPreset(name) {
+  if (PRESETS[name]) applyState(PRESETS[name]);
+}
+
+document.querySelectorAll("#tuning-panel .preset-btn").forEach((btn) => {
+  btn.addEventListener("click", () => applyPreset(btn.dataset.preset));
+});
+
+// User save slots: 4 chips, persisted as full state shapes in localStorage.
+//   - Empty: plain click saves current state.
+//   - Filled: plain click loads it. Shift+click overwrites with current.
+//   - Right-click filled slot to clear it.
+const SLOTS_KEY = "voidpulse.slots.v1";
+const slots = JSON.parse(localStorage.getItem(SLOTS_KEY) || "{}");
+
+function refreshSlotUI() {
+  document.querySelectorAll(".slot-btn").forEach((btn) => {
+    btn.classList.toggle("filled", !!slots[btn.dataset.slot]);
+  });
+}
+
+document.querySelectorAll(".slot-btn").forEach((btn) => {
+  btn.addEventListener("click", (e) => {
+    const id = btn.dataset.slot;
+    if (slots[id] && !e.shiftKey) {
+      applyState(slots[id]);
+    } else {
+      slots[id] = captureState();
+      localStorage.setItem(SLOTS_KEY, JSON.stringify(slots));
+      refreshSlotUI();
+    }
+  });
+  btn.addEventListener("contextmenu", (e) => {
+    e.preventDefault();
+    const id = btn.dataset.slot;
+    if (slots[id]) {
+      delete slots[id];
+      localStorage.setItem(SLOTS_KEY, JSON.stringify(slots));
+      refreshSlotUI();
+    }
+  });
+});
+
+refreshSlotUI();
+
+// URL-hash sharing:
+//   #presetName       → load a named preset
+//   #c-<base64-json>  → load an arbitrary captured state
+const shareBtn = document.getElementById("preset-share");
+
+function loadFromHash() {
+  const hash = location.hash.slice(1);
+  if (!hash) return false;
+  if (PRESETS[hash]) {
+    applyPreset(hash);
+    return true;
+  }
+  if (hash.startsWith("c-")) {
+    try {
+      applyState(JSON.parse(atob(hash.slice(2))));
+      return true;
+    } catch (err) {
+      console.warn("[voidpulse] invalid state in URL hash:", err);
+    }
+  }
+  return false;
+}
+
+shareBtn.addEventListener("click", () => {
+  const encoded = btoa(JSON.stringify(captureState()));
+  const url = `${location.origin}${location.pathname}#c-${encoded}`;
+  const flash = () => {
+    shareBtn.classList.add("copied");
+    shareBtn.textContent = "✓ copied";
+    setTimeout(() => {
+      shareBtn.classList.remove("copied");
+      shareBtn.textContent = "⎘ share";
+    }, 1500);
+  };
+  if (navigator.clipboard?.writeText) {
+    navigator.clipboard.writeText(url).then(flash).catch(() => prompt("copy this URL:", url));
+  } else {
+    prompt("copy this URL:", url);
+  }
+});
+
+window.addEventListener("hashchange", loadFromHash);
+// Run after localStorage tuning/stereo init so hash takes precedence.
+loadFromHash();
 
 // Sensitivity transform: quadratic curve so the useful range (0.2–1.5)
 // spans the first ~70% of the slider rather than the first 40%.

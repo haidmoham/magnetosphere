@@ -748,6 +748,85 @@ body::after {
 }
 .preset-btn:active { transform: translateY(1px); }
 
+/* User save slots — empty (dashed border, dim) vs filled (solid cyan glow). */
+.tuning-slots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 6px 0 4px;
+  border-bottom: 1px solid rgba(165, 102, 255, 0.12);
+  align-items: center;
+}
+#tuning-panel.collapsed .tuning-slots { display: none; }
+
+.slot-btn {
+  appearance: none;
+  background: rgba(0, 240, 255, 0.02);
+  border: 1px dashed rgba(0, 240, 255, 0.2);
+  border-radius: 2px;
+  padding: 3px 9px;
+  cursor: pointer;
+  font-family: "Orbitron", monospace;
+  font-weight: 700;
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  text-shadow: none;
+  transition: background 140ms ease, border-color 140ms ease,
+              color 140ms ease, text-shadow 140ms ease,
+              box-shadow 140ms ease, transform 80ms ease;
+}
+.slot-btn:hover {
+  background: rgba(0, 240, 255, 0.08);
+  border-color: rgba(0, 240, 255, 0.45);
+  color: var(--text-soft);
+}
+.slot-btn:active { transform: translateY(1px); }
+.slot-btn.filled {
+  background: rgba(0, 240, 255, 0.08);
+  border: 1px solid var(--neon-cyan);
+  color: var(--neon-cyan);
+  text-shadow: 0 0 4px rgba(0, 240, 255, 0.4);
+}
+.slot-btn.filled:hover {
+  background: rgba(0, 240, 255, 0.16);
+  box-shadow: 0 0 12px rgba(0, 240, 255, 0.3);
+}
+
+/* Share button — pink-themed so it visually separates from preset/slot chips. */
+.preset-share {
+  appearance: none;
+  margin-left: auto;
+  background: rgba(255, 61, 240, 0.05);
+  border: 1px solid rgba(255, 61, 240, 0.3);
+  border-radius: 2px;
+  padding: 3px 9px;
+  cursor: pointer;
+  font-family: "Orbitron", monospace;
+  font-weight: 700;
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--neon-pink);
+  text-shadow: 0 0 4px rgba(255, 61, 240, 0.3);
+  transition: background 140ms ease, border-color 140ms ease,
+              color 140ms ease, text-shadow 140ms ease,
+              box-shadow 140ms ease, transform 80ms ease;
+}
+.preset-share:hover {
+  background: rgba(255, 61, 240, 0.15);
+  border-color: var(--neon-pink);
+  box-shadow: 0 0 12px rgba(255, 61, 240, 0.4);
+}
+.preset-share:active { transform: translateY(1px); }
+.preset-share.copied {
+  background: rgba(0, 240, 255, 0.12);
+  border-color: var(--neon-cyan);
+  color: var(--neon-cyan);
+  text-shadow: 0 0 6px rgba(0, 240, 255, 0.5);
+}
+
 /* Stereo toggles — three on/off switches under the preset row. */
 .stereo-toggles {
   display: flex;
