@@ -104,34 +104,46 @@ function frame() {
 const TUNING_KEY = "voidpulse.tuning.v1";
 const savedTuning = JSON.parse(localStorage.getItem(TUNING_KEY) || "{}");
 
+// If a slider has data-exponent="N", the raw slider value is raised to the
+// Nth power before being applied. This gives log-like fine control at the
+// low end while still reaching the full range at max. The *displayed* value
+// and the value passed to setTuning are always the post-transform value so
+// screenshots are truthful.
+function applyTransform(input, raw) {
+  const exp = parseFloat(input.dataset.exponent);
+  return (exp && exp !== 1) ? Math.pow(raw, exp) : raw;
+}
+
 document.querySelectorAll("#tuning-panel input[type=range]").forEach((input) => {
   const valEl   = input.parentElement.querySelector(".slider-val");
   const label   = input.parentElement.querySelector("label");
   const uniform = input.dataset.uniform;
 
-  // Restore from localStorage on load
+  // Restore from localStorage on load (saved value is the raw slider position).
   if (typeof savedTuning[uniform] === "number") {
     input.value = savedTuning[uniform];
-    valEl.textContent = savedTuning[uniform].toFixed(2);
-    viz.setTuning(uniform, savedTuning[uniform]);
+    const restored = applyTransform(input, savedTuning[uniform]);
+    valEl.textContent = restored.toFixed(2);
+    viz.setTuning(uniform, restored);
   }
 
   input.addEventListener("input", () => {
-    const v = parseFloat(input.value);
+    const raw = parseFloat(input.value);
+    const v   = applyTransform(input, raw);
     valEl.textContent = v.toFixed(2);
     viz.setTuning(uniform, v);
-    savedTuning[uniform] = v;
+    savedTuning[uniform] = raw;             // save raw position, not transformed
     localStorage.setItem(TUNING_KEY, JSON.stringify(savedTuning));
   });
 
-  // Click the label to reset just that one slider to its HTML default.
-  // data-reset-to drives the custom hover tooltip in CSS.
-  label.dataset.resetTo = parseFloat(input.defaultValue).toFixed(2);
+  // Click the label to reset just that slider to its HTML default.
+  // Tooltip shows the *effective* (transformed) default.
+  const transformedDefault = applyTransform(input, parseFloat(input.defaultValue));
+  label.dataset.resetTo = transformedDefault.toFixed(2);
   label.addEventListener("click", () => {
-    const def = parseFloat(input.defaultValue);
-    input.value = def;
-    valEl.textContent = def.toFixed(2);
-    viz.setTuning(uniform, def);
+    input.value = input.defaultValue;
+    valEl.textContent = transformedDefault.toFixed(2);
+    viz.setTuning(uniform, transformedDefault);
     delete savedTuning[uniform];
     localStorage.setItem(TUNING_KEY, JSON.stringify(savedTuning));
   });
@@ -156,11 +168,11 @@ tuningToggle.addEventListener("click", () => {
 // Reset all sliders to their HTML default values and clear persisted state.
 tuningReset.addEventListener("click", () => {
   document.querySelectorAll("#tuning-panel input[type=range]").forEach((input) => {
-    const def = parseFloat(input.defaultValue);
-    input.value = def;
+    input.value = input.defaultValue;
+    const v    = applyTransform(input, parseFloat(input.defaultValue));
     const valEl = input.parentElement.querySelector(".slider-val");
-    valEl.textContent = def.toFixed(2);
-    viz.setTuning(input.dataset.uniform, def);
+    valEl.textContent = v.toFixed(2);
+    viz.setTuning(input.dataset.uniform, v);
     delete savedTuning[input.dataset.uniform];
   });
   localStorage.removeItem(TUNING_KEY);

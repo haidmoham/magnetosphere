@@ -25,10 +25,11 @@ const FLOOR_DEFAULTS = {
 };
 
 // Bloom defaults — UnrealBloomPass.
+// bStrength is pre-transformed: slider raw 0.60 → pow(0.60, 2.2) ≈ 0.33.
 const BLOOM_DEFAULTS = {
-  bStrength:  0.80,   // overall bloom intensity
-  bRadius:    0.55,   // softness / spread
-  bThreshold: 0.20,   // luminance floor — pixels below this don't bloom
+  bStrength:  0.33,
+  bRadius:    0.55,
+  bThreshold: 0.20,
 };
 
 const vertexShader = /* glsl */ `
