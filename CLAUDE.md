@@ -1,4 +1,4 @@
-# CLAUDE.md — Magnetosphere Project Memory
+# CLAUDE.md — Voidpulse Project Memory
 
 Source of truth for context, decisions, and conventions. Read at the start of every session.
 
