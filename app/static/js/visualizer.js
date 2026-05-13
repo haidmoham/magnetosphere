@@ -170,6 +170,13 @@ export class Visualizer {
     this.camera.position.set(0, 12, 135);
     this.camera.lookAt(0, -6, 0);
 
+    // Zoom toggle — _zoomTarget is the desired Z, _zoomCurrent lerps toward it
+    // each frame for a smooth ~0.5s ease in/out.
+    this._zoomOut     = 135;
+    this._zoomIn      = 80;
+    this._zoomCurrent = 135;
+    this._zoomTarget  = 135;
+
     // Pre-allocated colours — zero GC per frame.
     this._cInner = new THREE.Color();
     this._cOuter = new THREE.Color();
@@ -531,9 +538,17 @@ export class Visualizer {
 
     this.camera.position.x = 0;
     this.camera.position.y = 12 + Math.cos(t * 0.06) * 2.5;
+    this._zoomCurrent += (this._zoomTarget - this._zoomCurrent) * 0.06;
+    this.camera.position.z = this._zoomCurrent;
     this.camera.lookAt(0, -6, 0);
 
     this.composer.render();
+  }
+
+  // Zoom toggle — pass true/1 to zoom in, false/0 to zoom out. The render
+  // loop lerps _zoomCurrent toward _zoomTarget so the transition is smooth.
+  setZoom(zoomedIn) {
+    this._zoomTarget = zoomedIn ? this._zoomIn : this._zoomOut;
   }
 
   // Live-tuning hook for the debug panel.

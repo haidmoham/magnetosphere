@@ -17,6 +17,7 @@ const castBtn     = document.getElementById("cast-btn");
 const castTooltip = document.getElementById("cast-tooltip");
 const helpBtn     = document.getElementById("help-btn");
 const helpTooltip = document.getElementById("help-tooltip");
+const zoomBtn     = document.getElementById("zoom-btn");
 
 const audio = new AudioEngine();
 const viz = new Visualizer(canvas);
@@ -356,6 +357,22 @@ sensLabel.addEventListener("click", () => {
   sensSlider.value = sensSlider.defaultValue;
   audio.setSensitivity(sensTform(parseFloat(sensSlider.defaultValue)));
   localStorage.removeItem(SENS_KEY);
+});
+
+// Zoom toggle — flips camera between wide (default Z=135) and close (Z=80).
+// Visualizer lerps internally so the transition is smooth.
+const ZOOM_KEY = "voidpulse.zoom.v1";
+let zoomedIn = localStorage.getItem(ZOOM_KEY) === "1";
+function applyZoom() {
+  viz.setZoom(zoomedIn);
+  zoomBtn.classList.toggle("on", zoomedIn);
+  zoomBtn.textContent = zoomedIn ? "⊖ close" : "⊕ wide";
+}
+applyZoom();
+zoomBtn.addEventListener("click", () => {
+  zoomedIn = !zoomedIn;
+  localStorage.setItem(ZOOM_KEY, zoomedIn ? "1" : "0");
+  applyZoom();
 });
 
 mobileDismiss.addEventListener("click", () => { mobileNotice.hidden = true; });
