@@ -198,6 +198,28 @@
 
         <div class="tuning-section">
           <div class="section-header">
+            <button class="section-label" aria-label="Reset attractor values to defaults">attract</button>
+            <button class="section-random" title="🎲 randomize section" aria-label="Randomize attractor values">🎲</button>
+          </div>
+          <div class="slider-row">
+            <label>count</label>
+            <input type="range" data-uniform="cAttrCount" min="0" max="4" step="1" value="2">
+            <span class="slider-val">2.00</span>
+          </div>
+          <div class="slider-row">
+            <label>strength</label>
+            <input type="range" data-uniform="uAttrStr" min="0" max="15" step="0.5" value="4.0">
+            <span class="slider-val">4.00</span>
+          </div>
+          <div class="slider-row">
+            <label>orbit radius</label>
+            <input type="range" data-uniform="cAttrRadius" min="20" max="120" step="5" value="55">
+            <span class="slider-val">55.00</span>
+          </div>
+        </div>
+
+        <div class="tuning-section">
+          <div class="section-header">
             <button class="section-label" aria-label="Reset floor values to defaults">floor</button>
             <button class="section-random" title="🎲 randomize section" aria-label="Randomize floor values">🎲</button>
           </div>

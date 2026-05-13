@@ -62,6 +62,13 @@ const vertexShader = /* glsl */ `
   uniform float uSizeCurve;
   uniform float uShapeMix;
   uniform float uFlowStrength;   // tuning panel multiplier for flow amplitude
+  // Audio-reactive gravity wells — particles drift toward each active point.
+  uniform vec3  uAttrPos0;
+  uniform vec3  uAttrPos1;
+  uniform vec3  uAttrPos2;
+  uniform vec3  uAttrPos3;
+  uniform float uAttrCount;  // active well count (0–4)
+  uniform float uAttrStr;    // global pull strength
   attribute float aSize;
   attribute float aLayer;        // 0 = inner shell, 1 = outer shell
   attribute vec3 aSeed;
@@ -81,6 +88,14 @@ const vertexShader = /* glsl */ `
     float dy2 = sin(q2.z * 1.1 + t * 0.40 + q2.x) - sin(q2.x * 1.0 + t * 0.45 + q2.y);
     float dz2 = sin(q2.x * 0.9 + t * 0.41 + q2.y) - sin(q2.y * 1.1 + t * 0.36 + q2.z);
     return vec3(dx + dx2 * 0.40, dy + dy2 * 0.40, dz + dz2 * 0.40);
+  }
+
+  // Soft-falloff gravity pull toward dest. Force peaks at uAttrStr when a
+  // particle is on top of the well, falls to ~uAttrStr/6 at distance 50.
+  vec3 attrPull(vec3 dest, vec3 here) {
+    vec3  d    = dest - here;
+    float dist = max(length(d), 0.001);
+    return (d / dist) * uAttrStr / (dist * dist * 0.002 + 1.0);
   }
 
   void main() {
@@ -122,6 +137,13 @@ const vertexShader = /* glsl */ `
 
     // Beat burst + echo — two radial shockwaves, echo slightly smaller
     pos += normalize(basePos) * (uBurst * 28.0 + uEcho * 18.0);
+
+    // Gravity wells — pull particles toward each active attractor.
+    // Applied before scatter so the cloud "remembers" well positions as it reforms.
+    if (uAttrCount > 0.5) pos += attrPull(uAttrPos0, pos);
+    if (uAttrCount > 1.5) pos += attrPull(uAttrPos1, pos);
+    if (uAttrCount > 2.5) pos += attrPull(uAttrPos2, pos);
+    if (uAttrCount > 3.5) pos += attrPull(uAttrPos3, pos);
 
     // Scatter — each particle flies to its own random chaos position, then reforms
     vec3 scatterTarget = aSeed * 50.0;
@@ -200,6 +222,17 @@ export class Visualizer {
     this.cBurstInterval = 5.0; // minimum seconds between bursts
     this.cRotateSpeed   = 0.14; // base Y-axis spin rate (rad/s)
     this._lastBurstT    = -Infinity;
+
+    // Attractor gravity wells — orbit the cloud, driven by audio.
+    // angSpeed is relative: positive = CCW when viewed from above, negative = CW.
+    this._attrs = [
+      { angle: 0,               elev:  0.28, angSpeed:  1.00 },
+      { angle: Math.PI,         elev: -0.22, angSpeed: -0.70 },
+      { angle: Math.PI / 2,     elev:  0.40, angSpeed:  0.55 },
+      { angle: 3 * Math.PI / 2, elev: -0.38, angSpeed: -0.90 },
+    ];
+    this.cAttrCount  = 2;   // active wells (0–4); tuning panel "count" slider
+    this.cAttrRadius = 55;  // orbit radius; tuning panel "orbit radius" slider
 
     // Color entropy params (e* prefix).
     this.eCycleSpeed = 0.00;   // base hue drift rate (hue units/sec)
@@ -464,6 +497,12 @@ export class Visualizer {
         uSizeCurve:    { value: 2.65 },
         uShapeMix:     { value: 0.29 },   // 0 = sphere, 1 = heart
         uFlowStrength: { value: 1.0  },   // curl-noise amplitude multiplier
+        uAttrPos0:  { value: new THREE.Vector3( 55,  0,  0) },
+        uAttrPos1:  { value: new THREE.Vector3(-55,  0,  0) },
+        uAttrPos2:  { value: new THREE.Vector3(  0,  0, 55) },
+        uAttrPos3:  { value: new THREE.Vector3(  0,  0,-55) },
+        uAttrCount: { value: 2 },
+        uAttrStr:   { value: 4.0 },
       },
       vertexShader,
       fragmentShader,
@@ -474,6 +513,30 @@ export class Visualizer {
 
     this.particles = new THREE.Points(geo, mat);
     this.scene.add(this.particles);
+  }
+
+  // ── Attractors ───────────────────────────────────────────────────────────
+
+  _updateAttractors(bands, dt) {
+    const u   = this.particles.material.uniforms;
+    // Mid drives orbit speed; bass expands the orbit radius momentarily.
+    const speed = 0.06 + bands.mid * 0.22;
+    const r     = this.cAttrRadius * (0.85 + bands.bass * 0.32);
+    const pos   = [u.uAttrPos0, u.uAttrPos1, u.uAttrPos2, u.uAttrPos3];
+
+    this._attrs.forEach((a, i) => {
+      a.angle += speed * a.angSpeed * dt;
+      const cosE = Math.cos(a.elev);
+      // Small vertical bob per attractor (different phase per index).
+      const y = Math.sin(a.elev) * r * 0.45 + Math.sin(a.angle * 0.31 + i * 1.7) * 6;
+      pos[i].value.set(
+        Math.cos(a.angle) * r * cosE,
+        y,
+        Math.sin(a.angle) * r * cosE,
+      );
+    });
+
+    u.uAttrCount.value = Math.min(4, Math.max(0, Math.round(this.cAttrCount)));
   }
 
   // ── Colours ──────────────────────────────────────────────────────────────
@@ -558,6 +621,7 @@ export class Visualizer {
 
     this._updateColors(bands, bandsL, bandsR, t, u.uBurst.value);
     this._updateGrid(freqData, freqDataL, freqDataR);
+    this._updateAttractors(bands, dt);
 
     // Y-axis spin (podium rotation). Bass speeds it up.
     this.particles.rotation.y += dt * (this.cRotateSpeed + bands.bass * 0.46);
