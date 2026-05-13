@@ -104,8 +104,10 @@ export class SpotifyWatcher {
     let beat = false;
     if (positionMs - this._lastPulseMs >= beatIntervalMs * 0.95) {
       beat = true;
-      // Snap to grid so drift doesn't accumulate.
-      this._lastPulseMs = Math.floor(positionMs / beatIntervalMs) * beatIntervalMs;
+      // Advance by exactly one interval rather than Math.floor-snapping.
+      // Snapping to Math.floor can place _lastPulseMs before the current
+      // position, causing the next frame to immediately re-fire (double-burst).
+      this._lastPulseMs += beatIntervalMs;
     }
 
     // Energy curve: peaks at the pulse, decays before the next one. Half-life

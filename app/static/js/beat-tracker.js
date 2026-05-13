@@ -86,7 +86,11 @@ export class BeatTracker {
     if (!this._bpm || !this._intervalMs) return false;
     const now = performance.now();
     if (now - this._lastBeatMs >= this._intervalMs * 0.95) {
-      this._lastBeatMs = Math.floor(now / this._intervalMs) * this._intervalMs;
+      // Set to 'now' rather than Math.floor-snapping to a grid line.
+      // Grid-snapping can place _lastBeatMs *before* the current time,
+      // causing the next frame to immediately fire again (double-burst).
+      // Drift is corrected every ~2s when the Worker posts a new phase anchor.
+      this._lastBeatMs = now;
       this.onBeat?.();
       return true;
     }

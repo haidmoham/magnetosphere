@@ -257,7 +257,14 @@ function frame() {
     // Spotify watcher (if also running) contributes auto-palette in background
     // and receives phase-lock via beatTracker.onBeat — but doesn't drive bands.
     bands = audio.bands(); // also updates audio._beat internally
-    beat  = beatTracker?.isReady ? beatTracker.beat() : audio.beat();
+    if (beatTracker?.isReady) {
+      // Essentia fires on every BPM grid line regardless of energy. Gate it
+      // through bass so quiet passages and gaps don't trigger bursts —
+      // same implicit gate the FFT onset detector applies via _rawBass > 0.08.
+      beat = beatTracker.beat() && bands.bass > 0.07;
+    } else {
+      beat = audio.beat(); // FFT onset detector (already energy-gated)
+    }
   } else if (spotify.isPlaying) {
     // No audio source — Spotify only. Fall back to BPM-synthesised bands so
     // the cloud still breathes in time with whatever's playing.
