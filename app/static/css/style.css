@@ -312,14 +312,38 @@ body::after {
   box-shadow: 0 0 18px rgba(0, 240, 255, 0.12);
 }
 
-#vol-label {
-  font-size: 13px;
-  opacity: 0.7;
-  cursor: default;
-  user-select: none;
+#audio-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
-#vol-slider {
+.ctrl-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: opacity 200ms ease;
+}
+
+.ctrl-label {
+  font-family: "Orbitron", monospace;
+  font-weight: 700;
+  font-size: 8px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--neon-cyan);
+  opacity: 0.7;
+  width: 26px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.ctrl-disabled {
+  opacity: 0.28;
+  pointer-events: none;
+}
+
+#vol-slider, #sens-slider {
   appearance: none;
   -webkit-appearance: none;
   width: 80px;
@@ -329,7 +353,8 @@ body::after {
   outline: none;
   cursor: pointer;
 }
-#vol-slider::-webkit-slider-thumb {
+#vol-slider::-webkit-slider-thumb,
+#sens-slider::-webkit-slider-thumb {
   appearance: none;
   -webkit-appearance: none;
   width: 11px;
@@ -339,7 +364,8 @@ body::after {
   box-shadow: 0 0 6px var(--neon-cyan);
   cursor: pointer;
 }
-#vol-slider::-moz-range-thumb {
+#vol-slider::-moz-range-thumb,
+#sens-slider::-moz-range-thumb {
   width: 11px;
   height: 11px;
   border-radius: 50%;

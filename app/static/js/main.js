@@ -11,6 +11,8 @@ const errorToast = document.getElementById("error-toast");
 const mobileNotice = document.getElementById("mobile-notice");
 const mobileDismiss = document.getElementById("mobile-dismiss");
 const volSlider   = document.getElementById("vol-slider");
+const sensSlider  = document.getElementById("sens-slider");
+const volRow      = document.getElementById("vol-row");
 const castBtn     = document.getElementById("cast-btn");
 const castTooltip = document.getElementById("cast-tooltip");
 const helpBtn     = document.getElementById("help-btn");
@@ -45,7 +47,11 @@ function refreshUi() {
     const src = btn.dataset.src || (btn.classList.contains("file-btn") ? "file" : "");
     btn.classList.toggle("active", audio.mode === src);
   });
-  if (audio.mode === "file") {
+  const isFile = audio.mode === "file";
+  volRow.classList.toggle("ctrl-disabled", !isFile);
+  volSlider.disabled = !isFile;
+
+  if (isFile) {
     playBtn.hidden = false;
     playBtn.textContent = audio.isPlaying() ? "pause" : "play";
     stopBtn.hidden = false;
@@ -277,19 +283,26 @@ tuningReset.addEventListener("click", () => {
   localStorage.removeItem(TUNING_KEY);
 });
 
-// Volume slider — persists across reloads, applies immediately on source switch.
-const VOL_KEY = "voidpulse.volume";
+// Volume (file only) + Sensitivity (all modes) — both persist via localStorage.
+const VOL_KEY  = "voidpulse.volume";
+const SENS_KEY = "voidpulse.sensitivity";
+
 const savedVol = parseFloat(localStorage.getItem(VOL_KEY));
-if (!isNaN(savedVol)) {
-  volSlider.value = savedVol;
-  audio.setVolume(savedVol);
-} else {
-  audio.setVolume(parseFloat(volSlider.value));
-}
+if (!isNaN(savedVol)) { volSlider.value = savedVol; }
+audio.setVolume(parseFloat(volSlider.value));
 volSlider.addEventListener("input", () => {
   const v = parseFloat(volSlider.value);
   audio.setVolume(v);
   localStorage.setItem(VOL_KEY, v);
+});
+
+const savedSens = parseFloat(localStorage.getItem(SENS_KEY));
+if (!isNaN(savedSens)) { sensSlider.value = savedSens; }
+audio.setSensitivity(parseFloat(sensSlider.value));
+sensSlider.addEventListener("input", () => {
+  const v = parseFloat(sensSlider.value);
+  audio.setSensitivity(v);
+  localStorage.setItem(SENS_KEY, v);
 });
 
 mobileDismiss.addEventListener("click", () => { mobileNotice.hidden = true; });

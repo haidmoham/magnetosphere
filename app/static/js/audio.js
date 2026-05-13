@@ -37,7 +37,8 @@ export class AudioEngine {
     this.stream = null;
     this.freqData = null;
     this.label = "";
-    this._volume = 0.7;   // persisted across source switches
+    this._volume      = 0.7;   // file playback volume only
+    this._sensitivity = 1.0;   // visualizer reactivity, all modes
     this._smoothed = { bass: 0, mid: 0, treble: 0 };
     this._bassEnv  = 0;   // slow envelope for onset detection
     this._beat     = false;
@@ -56,10 +57,6 @@ export class AudioEngine {
     a.smoothingTimeConstant = 0.78;
     this.analyser = a;
     this.freqData = new Uint8Array(a.frequencyBinCount);
-
-    const g = this.ctx.createGain();
-    g.gain.value = this._volume;
-    this.gainNode = g;
   }
 
   async _teardownCurrent() {
@@ -98,8 +95,7 @@ export class AudioEngine {
     this.stream = stream;
     this.source = this.ctx.createMediaStreamSource(stream);
     this._buildAnalyser();
-    this.source.connect(this.gainNode);
-    this.gainNode.connect(this.analyser);
+    this.source.connect(this.analyser);
     // No connect to destination — would feed back.
     if (this.ctx.state === "suspended") await this.ctx.resume();
     this.mode = "mic";
@@ -125,8 +121,7 @@ export class AudioEngine {
     this.stream = stream;
     this.source = this.ctx.createMediaStreamSource(stream);
     this._buildAnalyser();
-    this.source.connect(this.gainNode);
-    this.gainNode.connect(this.analyser);
+    this.source.connect(this.analyser);
     // No connect to destination — the source tab is still playing the audio out loud.
 
     // If the user clicks "Stop sharing" in the browser bar, drop the stream cleanly.
@@ -148,9 +143,14 @@ export class AudioEngine {
     this.audio = audio;
     this.source = this.ctx.createMediaElementSource(audio);
     this._buildAnalyser();
-    this.source.connect(this.gainNode);
-    this.gainNode.connect(this.analyser);
-    this.analyser.connect(this.ctx.destination); // file path: actually play it out
+    // Chain: source → analyser → gainNode → destination
+    // gainNode sits after the analyser so volume doesn't affect sensitivity.
+    const g = this.ctx.createGain();
+    g.gain.value = this._volume;
+    this.gainNode = g;
+    this.source.connect(this.analyser);
+    this.analyser.connect(this.gainNode);
+    this.gainNode.connect(this.ctx.destination);
     if (this.ctx.state === "suspended") await this.ctx.resume();
     this.mode = "file";
     this.label = file.name;
@@ -159,6 +159,10 @@ export class AudioEngine {
   setVolume(v) {
     this._volume = v;
     if (this.gainNode) this.gainNode.gain.value = v;
+  }
+
+  setSensitivity(v) {
+    this._sensitivity = v;
   }
 
   async play() {
@@ -189,17 +193,19 @@ export class AudioEngine {
     this.analyser.getByteFrequencyData(this.freqData);
     const bins = this.freqData;
 
+    const sens = this._sensitivity;
+
     let bass = 0;
     for (let i = 1; i <= 6; i++) bass += bins[i];
-    bass /= 6 * 255;
+    bass = Math.min(1, (bass / (6 * 255)) * sens);
 
     let mid = 0;
     for (let i = 7; i <= 46; i++) mid += bins[i];
-    mid /= 40 * 255;
+    mid = Math.min(1, (mid / (40 * 255)) * sens);
 
     let treble = 0;
     for (let i = 47; i < 256; i++) treble += bins[i];
-    treble /= 209 * 255;
+    treble = Math.min(1, (treble / (209 * 255)) * sens);
 
     // Asymmetric smoothing: snap up fast on hits, decay slow.
     const s = this._smoothed;
