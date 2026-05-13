@@ -113,7 +113,7 @@ function frame() {
 
 // Tuning panel: sliders write directly to shader uniforms, values persist
 // across reloads via localStorage so a good config survives a refresh.
-const TUNING_KEY = "voidpulse.tuning.v5";
+const TUNING_KEY = "voidpulse.tuning.v6";
 const savedTuning = JSON.parse(localStorage.getItem(TUNING_KEY) || "{}");
 
 // If a slider has data-exponent="N", the raw slider value is raised to the
@@ -201,6 +201,54 @@ document.querySelectorAll("#tuning-panel .section-random").forEach((btn) => {
 const tuningRandom = document.getElementById("tuning-random");
 tuningRandom.addEventListener("click", () => {
   document.querySelectorAll("#tuning-panel input[type=range]").forEach(randomizeSlider);
+});
+
+// ── Presets ─────────────────────────────────────────────────────────────
+// Each preset is a map of slider data-uniform → raw slider value. Missing
+// entries fall back to the HTML default. Starfield matches HTML defaults
+// (so it's empty); heart has explicit values.
+const PRESETS = {
+  starfield: {},
+  heart: {
+    uBreatheMin:    0.35,
+    uBreatheMax:    2.50,
+    uBreatheCurve:  2.35,
+    uSizeMin:       0.14,
+    uSizeMax:       2.15,
+    uSizeCurve:     3.00,
+    cBurstInterval: 0.5,
+    cRotateSpeed:   0.06,
+    fMaxH:         30,
+    fScroll:        5,
+    fScrollBass:   22,
+    fDecay:         0.80,
+    fHotCurve:      2.5,
+    bStrength:      0.48,    // raw — pow(0.48, 2.2) ≈ 0.20 displayed
+    bRadius:        0.25,
+    bThreshold:     0.38,
+    uShapeMix:      1.0,
+    eCycleSpeed:    0.05,
+    eBassHue:       0.50,
+    eTrebleHue:     0.10,
+    eSatReact:      0.30,
+    eBurstHue:      0.50,
+  },
+};
+
+function applyPreset(name) {
+  const preset = PRESETS[name];
+  if (!preset) return;
+  document.querySelectorAll("#tuning-panel input[type=range]").forEach((input) => {
+    const uniform = input.dataset.uniform;
+    const raw = (uniform in preset) ? preset[uniform] : parseFloat(input.defaultValue);
+    input.value = raw;
+    // Fire the input event so all wiring (transform, display, save, viz.setTuning) runs.
+    input.dispatchEvent(new Event("input"));
+  });
+}
+
+document.querySelectorAll("#tuning-panel .preset-btn").forEach((btn) => {
+  btn.addEventListener("click", () => applyPreset(btn.dataset.preset));
 });
 
 // Collapse / expand the tuning panel.
