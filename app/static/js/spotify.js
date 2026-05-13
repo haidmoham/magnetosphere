@@ -94,6 +94,12 @@ export class SpotifyEngine {
   async pause()      { await this.player?.pause();      }
   async resume()     { await this.player?.resume();     }
 
+  /** Volume 0–1. SDK clamps internally; we no-op if the player isn't ready. */
+  async setVolume(v) {
+    if (!this.player) return;
+    try { await this.player.setVolume(Math.max(0, Math.min(1, v))); } catch {}
+  }
+
   async disconnect() {
     try { await this.player?.disconnect(); } catch {}
     this.player       = null;

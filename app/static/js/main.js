@@ -53,9 +53,12 @@ function refreshUi() {
     const src = btn.dataset.src || (btn.classList.contains("file-btn") ? "file" : "");
     btn.classList.toggle("active", audio.mode === src);
   });
+  // Volume slider is active for any source where we control output gain:
+  // local file (via gainNode) and spotify (via SDK player.setVolume).
+  const volActive = audio.mode === "file" || audio.mode === "spotify";
+  volRow.classList.toggle("ctrl-disabled", !volActive);
+  volSlider.disabled = !volActive;
   const isFile = audio.mode === "file";
-  volRow.classList.toggle("ctrl-disabled", !isFile);
-  volSlider.disabled = !isFile;
 
   if (isFile) {
     playBtn.hidden = false;
@@ -136,6 +139,9 @@ async function activateSpotify() {
     spotify.onReady = async () => {
       try {
         await spotify.transferToThisDevice(false);
+        // Sync the player to whatever the slider currently shows so the
+        // saved volume actually takes effect (SDK default is 0.7).
+        await spotify.setVolume(parseFloat(volSlider.value));
         audio.label = "spotify · ready";
       } catch (err) {
         showError(`Spotify transfer failed: ${err.message || err}`);
@@ -751,7 +757,8 @@ if (!isNaN(savedVol)) { volSlider.value = savedVol; }
 audio.setVolume(parseFloat(volSlider.value));
 volSlider.addEventListener("input", () => {
   const v = parseFloat(volSlider.value);
-  audio.setVolume(v);
+  audio.setVolume(v);           // file mode: drives the gainNode
+  if (audio.mode === "spotify") spotify.setVolume(v);
   localStorage.setItem(VOL_KEY, v);
 });
 
