@@ -79,12 +79,22 @@
     </div>
 
     <div id="lower-left">
-      <div id="zoom-controls">
-        <span class="zoom-label">⊕ zoom <span id="zoom-value">57%</span></span>
-        <button id="zoom-out-btn" class="zoom-step" title="zoom out" aria-label="Zoom out">−</button>
-        <button id="zoom-in-btn"  class="zoom-step" title="zoom in"  aria-label="Zoom in">+</button>
+      <div id="zoom-row">
+        <div id="zoom-controls">
+          <span class="zoom-label">⊕ zoom <span id="zoom-value">57%</span></span>
+          <button id="zoom-out-btn" class="zoom-step" title="zoom out" aria-label="Zoom out">−</button>
+          <button id="zoom-in-btn"  class="zoom-step" title="zoom in"  aria-label="Zoom in">+</button>
+        </div>
+        <button id="ui-hide-btn" title="Hide all UI — only nameplate and zoom remain">⊘ hide ui</button>
       </div>
-      <button id="ui-hide-btn" title="Hide all UI — only nameplate and zoom remain">⊘ hide ui</button>
+      <div id="disrupt-controls">
+        <button id="cursor-disrupt-btn" title="Cursor disturbs the particle field">↯ disrupt</button>
+        <div id="disrupt-radius-row">
+          <label for="disrupt-radius-slider" id="disrupt-radius-label">radius</label>
+          <input type="range" id="disrupt-radius-slider" min="15" max="200" step="1" value="72">
+          <span id="disrupt-radius-val">72</span>
+        </div>
+      </div>
     </div>
 
     <div id="spotify-tooltip" hidden>
@@ -367,6 +377,26 @@
             <span class="slider-val">0.44</span>
           </div>
         </div>
+      </div>
+    </div>
+
+    <div id="mobile-cta">more features on desktop</div>
+
+    <div id="mobile-panel">
+      <div class="mobile-panel-row">
+        <button class="preset-btn" data-preset="starfield">starfield</button>
+        <button class="preset-btn" data-preset="heart">heart</button>
+        <button class="preset-btn" data-preset="nebula">nebula</button>
+        <button class="preset-btn" data-preset="storm">storm</button>
+        <button class="preset-btn" data-preset="vapor">vapor</button>
+      </div>
+      <div class="mobile-panel-row">
+        <button class="palette-btn" data-palette="synthwave">synthwave</button>
+        <button class="palette-btn" data-palette="inferno">inferno</button>
+        <button class="palette-btn" data-palette="arctic">arctic</button>
+        <button class="palette-btn" data-palette="toxic">toxic</button>
+        <button class="palette-btn" data-palette="void">void</button>
+        <button class="palette-btn" data-palette="ember">ember</button>
       </div>
     </div>
 
