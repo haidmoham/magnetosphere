@@ -313,9 +313,16 @@ document.querySelectorAll(".stereo-btn").forEach((btn) => {
   });
 });
 
+// Sensitivity transform: quadratic curve so the useful range (0.2–1.5)
+// spans the first ~70% of the slider rather than the first 40%.
+// raw 0→1 maps to displayed 0.20→3.00; default raw≈0.535 → displayed≈1.00.
+function sensTform(raw) {
+  return 0.2 + raw * raw * 2.8;
+}
+
 // Volume (file only) + Sensitivity (all modes) — both persist via localStorage.
 const VOL_KEY  = "voidpulse.volume";
-const SENS_KEY = "voidpulse.sensitivity";
+const SENS_KEY = "voidpulse.sensitivity.v2"; // v2: stores raw 0–1 position, not displayed value
 
 const savedVol = parseFloat(localStorage.getItem(VOL_KEY));
 if (!isNaN(savedVol)) { volSlider.value = savedVol; }
@@ -328,11 +335,27 @@ volSlider.addEventListener("input", () => {
 
 const savedSens = parseFloat(localStorage.getItem(SENS_KEY));
 if (!isNaN(savedSens)) { sensSlider.value = savedSens; }
-audio.setSensitivity(parseFloat(sensSlider.value));
+audio.setSensitivity(sensTform(parseFloat(sensSlider.value)));
 sensSlider.addEventListener("input", () => {
-  const v = parseFloat(sensSlider.value);
-  audio.setSensitivity(v);
-  localStorage.setItem(SENS_KEY, v);
+  const raw = parseFloat(sensSlider.value);
+  audio.setSensitivity(sensTform(raw));
+  localStorage.setItem(SENS_KEY, raw);
+});
+
+// Click label to reset — same design language as tuning panel sliders.
+const volLabel  = document.getElementById("vol-label");
+const sensLabel = document.getElementById("sens-label");
+
+volLabel.addEventListener("click", () => {
+  volSlider.value = volSlider.defaultValue;
+  audio.setVolume(parseFloat(volSlider.defaultValue));
+  localStorage.removeItem(VOL_KEY);
+});
+
+sensLabel.addEventListener("click", () => {
+  sensSlider.value = sensSlider.defaultValue;
+  audio.setSensitivity(sensTform(parseFloat(sensSlider.defaultValue)));
+  localStorage.removeItem(SENS_KEY);
 });
 
 mobileDismiss.addEventListener("click", () => { mobileNotice.hidden = true; });

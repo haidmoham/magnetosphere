@@ -326,6 +326,12 @@ body::after {
 }
 
 .ctrl-label {
+  appearance: none;
+  -webkit-appearance: none;
+  background: transparent;
+  border: none;
+  padding: 1px 2px;
+  border-radius: 2px;
   font-family: "Orbitron", monospace;
   font-weight: 700;
   font-size: 8px;
@@ -336,6 +342,46 @@ body::after {
   width: 26px;
   text-align: right;
   flex-shrink: 0;
+  cursor: pointer;
+  position: relative;
+  transition: opacity 120ms ease, text-shadow 120ms ease, transform 80ms ease;
+}
+.ctrl-label:hover {
+  opacity: 1;
+  text-shadow: 0 0 6px rgba(0, 240, 255, 0.5);
+}
+.ctrl-label:active {
+  color: var(--neon-cyan);
+  text-shadow: 0 0 8px rgba(0, 240, 255, 0.9);
+  transform: translateY(1px);
+}
+.ctrl-label[data-reset-to]::after {
+  content: "↻ reset to " attr(data-reset-to);
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 0;
+  white-space: nowrap;
+  font-family: "Orbitron", monospace;
+  font-weight: 700;
+  font-size: 8px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  padding: 4px 8px;
+  background: rgba(8, 0, 26, 0.96);
+  border: 1px solid rgba(0, 240, 255, 0.45);
+  color: var(--neon-cyan);
+  border-radius: 2px;
+  text-shadow: 0 0 4px rgba(0, 240, 255, 0.55);
+  box-shadow: 0 0 12px rgba(0, 240, 255, 0.25);
+  opacity: 0;
+  transform: translateY(2px);
+  pointer-events: none;
+  transition: opacity 120ms ease, transform 120ms ease;
+  z-index: 16;
+}
+.ctrl-label:hover::after {
+  opacity: 1;
+  transform: translateY(0);
 }
 
 .ctrl-disabled {
