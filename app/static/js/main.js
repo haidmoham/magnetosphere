@@ -265,6 +265,9 @@ stopBtn.addEventListener("click", async () => {
   refreshUi();
 });
 
+// Burst gate state — persists across frames so the cooldown check works.
+let _lastBurstMs = -Infinity;
+
 function frame() {
   let bands, beat;
   if (audio.analyser) {
@@ -273,10 +276,14 @@ function frame() {
     // and receives phase-lock via beatTracker.onBeat — but doesn't drive bands.
     bands = audio.bands(); // also updates audio._beat internally
     if (beatTracker?.isReady) {
-      // Essentia fires on every BPM grid line regardless of energy. Gate it
-      // through bass so quiet passages and gaps don't trigger bursts —
-      // same implicit gate the FFT onset detector applies via _rawBass > 0.08.
-      beat = beatTracker.beat() && bands.bass > 0.07;
+      // Always call beat() to advance the grid and fire onBeat (→ spotify.phaseLock).
+      const gridBeat   = beatTracker.beat();
+      const now        = performance.now();
+      const minGapMs   = (beatTracker.intervalMs || 500) * 1.25; // 20% less frequent
+      const energyOk   = bands.bass > 0.09;                      // 25% harder to trigger
+      const cooldownOk = now - _lastBurstMs >= minGapMs;
+      beat = gridBeat && energyOk && cooldownOk;
+      if (beat) _lastBurstMs = now;
     } else {
       beat = audio.beat(); // FFT onset detector (already energy-gated)
     }
