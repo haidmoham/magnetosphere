@@ -113,7 +113,7 @@ function frame() {
 
 // Tuning panel: sliders write directly to shader uniforms, values persist
 // across reloads via localStorage so a good config survives a refresh.
-const TUNING_KEY = "voidpulse.tuning.v3";
+const TUNING_KEY = "voidpulse.tuning.v5";
 const savedTuning = JSON.parse(localStorage.getItem(TUNING_KEY) || "{}");
 
 // If a slider has data-exponent="N", the raw slider value is raised to the
@@ -177,13 +177,41 @@ document.querySelectorAll("#tuning-panel .section-label").forEach((header) => {
   });
 });
 
+// Helper: pick a random value within a slider's range (snapped to step), then
+// fire the input event so all the existing wiring (transform, display, save,
+// viz.setTuning) runs.
+function randomizeSlider(input) {
+  const min  = parseFloat(input.min);
+  const max  = parseFloat(input.max);
+  const step = parseFloat(input.step) || 0.01;
+  const v    = min + Math.random() * (max - min);
+  input.value = Math.round(v / step) * step;
+  input.dispatchEvent(new Event("input"));
+}
+
+// 🎲 per-section randomize buttons.
+document.querySelectorAll("#tuning-panel .section-random").forEach((btn) => {
+  const section = btn.closest(".tuning-section");
+  btn.addEventListener("click", () => {
+    section.querySelectorAll("input[type=range]").forEach(randomizeSlider);
+  });
+});
+
+// 🎲 overall randomize.
+const tuningRandom = document.getElementById("tuning-random");
+tuningRandom.addEventListener("click", () => {
+  document.querySelectorAll("#tuning-panel input[type=range]").forEach(randomizeSlider);
+});
+
 // Collapse / expand the tuning panel.
 const tuningPanel  = document.getElementById("tuning-panel");
 const tuningToggle = document.getElementById("tuning-toggle");
 const tuningReset  = document.getElementById("tuning-reset");
 const TUNING_COLLAPSED_KEY = "voidpulse.tuning.collapsed";
-if (localStorage.getItem(TUNING_COLLAPSED_KEY) === "1") {
-  tuningPanel.classList.add("collapsed");
+// Panel starts collapsed (set via HTML class). Only expand if the user has
+// explicitly opened it in a previous session.
+if (localStorage.getItem(TUNING_COLLAPSED_KEY) === "0") {
+  tuningPanel.classList.remove("collapsed");
 }
 tuningToggle.addEventListener("click", () => {
   tuningPanel.classList.toggle("collapsed");

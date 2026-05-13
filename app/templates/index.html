@@ -79,18 +79,22 @@
       <div class="meter"><div class="bar"><div id="treble-bar"></div></div></div>
     </div>
 
-    <div id="tuning-panel">
+    <div id="tuning-panel" class="collapsed">
       <div class="tuning-header">
         <span class="tuning-title">tuning</span>
         <div class="tuning-actions">
-          <button id="tuning-reset" aria-label="Reset all values to defaults">↺ reset</button>
+          <button id="tuning-random" aria-label="Randomize all values" title="🎲 randomize all">🎲 rand</button>
+          <button id="tuning-reset"  aria-label="Reset all values to defaults">↺ reset</button>
           <button id="tuning-toggle" aria-label="Collapse tuning panel">▾</button>
         </div>
       </div>
       <div class="tuning-hint">↻ click a label to reset its value</div>
       <div class="tuning-body">
         <div class="tuning-section">
-          <button class="section-label" aria-label="Reset cloud values to defaults">cloud</button>
+          <div class="section-header">
+            <button class="section-label" aria-label="Reset cloud values to defaults">cloud</button>
+            <button class="section-random" title="🎲 randomize section" aria-label="Randomize cloud values">🎲</button>
+          </div>
           <div class="slider-row">
             <label>breathe min</label>
             <input type="range" data-uniform="uBreatheMin" min="0.2" max="1.2" step="0.01" value="0.35">
@@ -98,8 +102,8 @@
           </div>
           <div class="slider-row">
             <label>breathe max</label>
-            <input type="range" data-uniform="uBreatheMax" min="0.2" max="2.5" step="0.01" value="1.70">
-            <span class="slider-val">1.70</span>
+            <input type="range" data-uniform="uBreatheMax" min="0.2" max="2.5" step="0.01" value="2.50">
+            <span class="slider-val">2.50</span>
           </div>
           <div class="slider-row">
             <label>breathe curve</label>
@@ -113,8 +117,8 @@
           </div>
           <div class="slider-row">
             <label>size max</label>
-            <input type="range" data-uniform="uSizeMax" min="0.3" max="4.0" step="0.01" value="1.60">
-            <span class="slider-val">1.60</span>
+            <input type="range" data-uniform="uSizeMax" min="0.3" max="4.0" step="0.01" value="2.15">
+            <span class="slider-val">2.15</span>
           </div>
           <div class="slider-row">
             <label>size curve</label>
@@ -123,13 +127,21 @@
           </div>
           <div class="slider-row">
             <label>burst every</label>
-            <input type="range" data-uniform="cBurstInterval" min="0.5" max="10.0" step="0.1" value="2.5">
-            <span class="slider-val">2.50</span>
+            <input type="range" data-uniform="cBurstInterval" min="0.5" max="10.0" step="0.1" value="0.5">
+            <span class="slider-val">0.50</span>
+          </div>
+          <div class="slider-row">
+            <label>spin speed</label>
+            <input type="range" data-uniform="cRotateSpeed" min="0" max="0.5" step="0.01" value="0.06">
+            <span class="slider-val">0.06</span>
           </div>
         </div>
 
         <div class="tuning-section">
-          <button class="section-label" aria-label="Reset floor values to defaults">floor</button>
+          <div class="section-header">
+            <button class="section-label" aria-label="Reset floor values to defaults">floor</button>
+            <button class="section-random" title="🎲 randomize section" aria-label="Randomize floor values">🎲</button>
+          </div>
           <div class="slider-row">
             <label>max height</label>
             <input type="range" data-uniform="fMaxH" min="5" max="40" step="1" value="30">
@@ -158,26 +170,44 @@
         </div>
 
         <div class="tuning-section">
-          <button class="section-label" aria-label="Reset bloom values to defaults">bloom</button>
+          <div class="section-header">
+            <button class="section-label" aria-label="Reset bloom values to defaults">bloom</button>
+            <button class="section-random" title="🎲 randomize section" aria-label="Randomize bloom values">🎲</button>
+          </div>
           <!-- data-exponent applies pow(raw, exp) so low end is fine-grained -->
           <div class="slider-row">
             <label>strength</label>
-            <input type="range" data-uniform="bStrength" data-exponent="2.2" min="0" max="1.0" step="0.01" value="0.42">
-            <span class="slider-val">0.15</span>
+            <input type="range" data-uniform="bStrength" data-exponent="2.2" min="0" max="1.0" step="0.01" value="0.48">
+            <span class="slider-val">0.20</span>
           </div>
           <div class="slider-row">
             <label>radius</label>
-            <input type="range" data-uniform="bRadius" min="0" max="1.0" step="0.01" value="0.50">
-            <span class="slider-val">0.50</span>
+            <input type="range" data-uniform="bRadius" min="0" max="1.0" step="0.01" value="0.25">
+            <span class="slider-val">0.25</span>
           </div>
           <div class="slider-row">
             <label>threshold</label>
-            <input type="range" data-uniform="bThreshold" min="0" max="1.0" step="0.01" value="0.30">
-            <span class="slider-val">0.30</span>
+            <input type="range" data-uniform="bThreshold" min="0" max="1.0" step="0.01" value="0.38">
+            <span class="slider-val">0.38</span>
           </div>
         </div>
         <div class="tuning-section">
-          <button class="section-label" aria-label="Reset color values to defaults">color</button>
+          <div class="section-header">
+            <button class="section-label" aria-label="Reset shape values to defaults">shape</button>
+            <button class="section-random" title="🎲 randomize section" aria-label="Randomize shape values">🎲</button>
+          </div>
+          <div class="slider-row">
+            <label>sphere → heart</label>
+            <input type="range" data-uniform="uShapeMix" min="0" max="1" step="0.01" value="1">
+            <span class="slider-val">1.00</span>
+          </div>
+        </div>
+
+        <div class="tuning-section">
+          <div class="section-header">
+            <button class="section-label" aria-label="Reset color values to defaults">color</button>
+            <button class="section-random" title="🎲 randomize section" aria-label="Randomize color values">🎲</button>
+          </div>
           <div class="slider-row">
             <label>cycle speed</label>
             <input type="range" data-uniform="eCycleSpeed" min="0" max="0.08" step="0.002" value="0.05">
