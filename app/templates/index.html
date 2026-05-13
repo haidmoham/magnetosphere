@@ -49,21 +49,31 @@
     </div>
   </div>
 
-  <!-- Mobile demo picker — full-screen intro shown on touch devices.
-       Populated by /auth/spotify/demos (client credentials, no user login). -->
+  <!-- Mobile demo picker — full-screen intro shown on touch devices. -->
   <div id="mobile-demo" hidden>
     <div class="md-inner">
-      <div class="md-header">
-        <div class="md-wordmark">VOIDPULSE</div>
-        <div class="md-sub">tap a track to start</div>
+      <div class="md-wordmark">VOIDPULSE</div>
+
+      <div class="md-search-wrap">
+        <input id="md-search" type="search" placeholder="search any song…"
+               autocomplete="off" autocorrect="off" spellcheck="false">
       </div>
-      <div id="md-tracks" class="md-tracks">
-        <div class="md-loading">
-          <span class="md-loading-dot"></span>
-          <span class="md-loading-dot"></span>
-          <span class="md-loading-dot"></span>
+
+      <!-- Search results (visible while query is non-empty) -->
+      <div id="md-results" class="md-tracks" hidden></div>
+
+      <!-- Suggestions shelf (visible when no query) -->
+      <div id="md-suggestions">
+        <div class="md-shelf-label">suggested</div>
+        <div id="md-tracks" class="md-tracks">
+          <div class="md-loading">
+            <span class="md-loading-dot"></span>
+            <span class="md-loading-dot"></span>
+            <span class="md-loading-dot"></span>
+          </div>
         </div>
       </div>
+
       <button id="md-skip">use mic instead</button>
     </div>
   </div>

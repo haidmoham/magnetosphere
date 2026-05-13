@@ -161,61 +161,120 @@ async function connectBeatTracker() {
 const isMobile = navigator.maxTouchPoints > 0 && window.innerWidth < 900;
 
 // ── Mobile demo picker ───────────────────────────────────────────────────────
-const mobileDemoEl = document.getElementById("mobile-demo");
-const mdTracksEl   = document.getElementById("md-tracks");
-const mdSkipBtn    = document.getElementById("md-skip");
-let _activeTrackBtn = null;
+const mobileDemoEl   = document.getElementById("mobile-demo");
+const mdTracksEl     = document.getElementById("md-tracks");     // suggestions list
+const mdResultsEl    = document.getElementById("md-results");    // search results list
+const mdSuggestEl    = document.getElementById("md-suggestions");
+const mdSearchInput  = document.getElementById("md-search");
+const mdSkipBtn      = document.getElementById("md-skip");
+let _activeTrackBtn  = null;
 
-async function loadDemoTracks() {
+/** Build a track card button from a { title, artist, preview_url, art_url } object. */
+function buildTrackCard(track) {
+  const btn = document.createElement("button");
+  btn.className = "md-track";
+  btn.innerHTML = `
+    <img class="md-art" src="${track.art_url || ""}" alt="" loading="lazy">
+    <div class="md-info">
+      <div class="md-track-title">${track.title}</div>
+      <div class="md-track-artist">${track.artist}</div>
+    </div>
+    <span class="md-play-icon">▶</span>
+  `;
+  btn.addEventListener("click", async () => {
+    if (_activeTrackBtn) {
+      _activeTrackBtn.classList.remove("md-playing");
+      _activeTrackBtn.querySelector(".md-play-icon").textContent = "▶";
+    }
+    _activeTrackBtn = btn;
+    btn.classList.add("md-playing");
+    btn.querySelector(".md-play-icon").textContent = "▐▐";
+    try {
+      await audio.loadUrl(track.preview_url, track.title);
+      await audio.play();
+      connectBeatTracker().catch(() => {});
+    } catch (err) {
+      showError(err.message || String(err));
+      return;
+    }
+    refreshUi();
+    setTimeout(() => { mobileDemoEl.hidden = true; }, 600);
+  });
+  return btn;
+}
+
+function renderTracks(container, tracks, emptyMsg) {
+  container.innerHTML = "";
+  if (!tracks.length) {
+    container.innerHTML = `<div class="md-empty">${emptyMsg}</div>`;
+    return;
+  }
+  tracks.forEach(t => container.appendChild(buildTrackCard(t)));
+}
+
+/** Load curated suggestions from our Flask endpoint (iTunes-backed, cached). */
+async function loadSuggestions() {
   try {
     const res = await fetch("/auth/spotify/demos");
     const tracks = await res.json();
-    if (!Array.isArray(tracks) || tracks.length === 0) {
-      mdTracksEl.innerHTML = '<div class="md-empty">previews unavailable — use mic below</div>';
-      return;
-    }
-    mdTracksEl.innerHTML = "";
-    tracks.forEach((track) => {
-      const btn = document.createElement("button");
-      btn.className = "md-track";
-      btn.innerHTML = `
-        <img class="md-art" src="${track.art_url || ""}" alt="">
-        <div class="md-info">
-          <div class="md-track-title">${track.title}</div>
-          <div class="md-track-artist">${track.artist}</div>
-        </div>
-        <span class="md-play-icon">▶</span>
-      `;
-      btn.addEventListener("click", async () => {
-        // Highlight active card.
-        if (_activeTrackBtn) _activeTrackBtn.classList.remove("md-playing");
-        _activeTrackBtn = btn;
-        btn.classList.add("md-playing");
-        btn.querySelector(".md-play-icon").textContent = "▐▐";
-
-        try {
-          await audio.loadUrl(track.preview_url, track.title);
-          await audio.play();
-          connectBeatTracker().catch(() => {});
-        } catch (err) {
-          showError(err.message || String(err));
-          return;
-        }
-        refreshUi();
-        // Dismiss the overlay after a short beat so the cloud is already
-        // reacting before it comes fully into view.
-        setTimeout(() => { mobileDemoEl.hidden = true; }, 600);
-      });
-      mdTracksEl.appendChild(btn);
-    });
+    renderTracks(mdTracksEl, Array.isArray(tracks) ? tracks : [],
+      "previews unavailable — use mic below");
   } catch {
-    mdTracksEl.innerHTML = '<div class="md-empty">couldn\'t load previews — use mic below</div>';
+    mdTracksEl.innerHTML = '<div class="md-empty">couldn\'t load suggestions</div>';
   }
 }
 
+/** Search iTunes directly from the browser (open CORS). */
+async function searchItunes(query) {
+  const url = `https://itunes.apple.com/search?${new URLSearchParams({
+    term: query, entity: "song", limit: 6, country: "US",
+  })}`;
+  const data = await fetch(url).then(r => r.json());
+  return (data.results || [])
+    .filter(item => item.previewUrl)
+    .map(item => ({
+      title:       item.trackName,
+      artist:      item.artistName,
+      preview_url: item.previewUrl,
+      art_url:     (item.artworkUrl100 || "").replace("100x100", "300x300"),
+    }));
+}
+
+// Debounced search — fires 350ms after the user stops typing.
+let _searchTimer = 0;
+mdSearchInput.addEventListener("input", () => {
+  const q = mdSearchInput.value.trim();
+  clearTimeout(_searchTimer);
+
+  if (!q) {
+    // Back to suggestions
+    mdResultsEl.hidden  = true;
+    mdSuggestEl.hidden  = false;
+    return;
+  }
+
+  // Show results area with loading dots while we wait.
+  mdSuggestEl.hidden  = true;
+  mdResultsEl.hidden  = false;
+  mdResultsEl.innerHTML = `<div class="md-loading">
+    <span class="md-loading-dot"></span>
+    <span class="md-loading-dot"></span>
+    <span class="md-loading-dot"></span>
+  </div>`;
+
+  _searchTimer = setTimeout(async () => {
+    try {
+      const tracks = await searchItunes(q);
+      renderTracks(mdResultsEl, tracks, "no previews found — try another track");
+    } catch {
+      mdResultsEl.innerHTML = '<div class="md-empty">search failed — try again</div>';
+    }
+  }, 350);
+});
+
 function showMobileDemo() {
   mobileDemoEl.hidden = false;
-  loadDemoTracks();
+  loadSuggestions();
 }
 
 mdSkipBtn.addEventListener("click", () => {

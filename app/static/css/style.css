@@ -1322,14 +1322,44 @@ body::after {
   text-shadow: 0 0 24px rgba(0, 240, 255, 0.8), 0 0 48px rgba(0, 240, 255, 0.3);
   text-align: center;
 }
-.md-sub {
+/* Search bar */
+.md-search-wrap {
+  width: 100%;
+}
+#md-search {
+  width: 100%;
+  box-sizing: border-box;
+  background: rgba(10, 0, 30, 0.7);
+  border: 1px solid rgba(0, 240, 255, 0.22);
+  border-radius: 6px;
+  padding: 11px 14px;
   font-family: "Share Tech Mono", monospace;
-  font-size: 11px;
-  letter-spacing: 0.22em;
-  color: rgba(246, 214, 255, 0.45);
+  font-size: 14px;
+  letter-spacing: 0.05em;
+  color: rgba(246, 214, 255, 0.9);
+  outline: none;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  transition: border-color 180ms ease, box-shadow 180ms ease;
+  -webkit-appearance: none;
+  appearance: none;
+}
+#md-search::placeholder { color: rgba(246, 214, 255, 0.25); }
+#md-search:focus {
+  border-color: rgba(0, 240, 255, 0.55);
+  box-shadow: 0 0 14px rgba(0, 240, 255, 0.15);
+}
+#md-search::-webkit-search-cancel-button { display: none; }
+
+/* Suggestions shelf label */
+.md-shelf-label {
+  font-family: "Orbitron", monospace;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.28em;
   text-transform: uppercase;
-  text-align: center;
-  margin-top: 6px;
+  color: rgba(0, 240, 255, 0.35);
+  margin-bottom: 8px;
 }
 
 /* Track card list */
