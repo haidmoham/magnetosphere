@@ -10,6 +10,7 @@ const stopBtn = document.getElementById("stop-btn");
 const errorToast = document.getElementById("error-toast");
 const mobileNotice = document.getElementById("mobile-notice");
 const mobileDismiss = document.getElementById("mobile-dismiss");
+const volSlider   = document.getElementById("vol-slider");
 const castBtn     = document.getElementById("cast-btn");
 const castTooltip = document.getElementById("cast-tooltip");
 const helpBtn     = document.getElementById("help-btn");
@@ -274,6 +275,21 @@ tuningReset.addEventListener("click", () => {
     delete savedTuning[input.dataset.uniform];
   });
   localStorage.removeItem(TUNING_KEY);
+});
+
+// Volume slider — persists across reloads, applies immediately on source switch.
+const VOL_KEY = "voidpulse.volume";
+const savedVol = parseFloat(localStorage.getItem(VOL_KEY));
+if (!isNaN(savedVol)) {
+  volSlider.value = savedVol;
+  audio.setVolume(savedVol);
+} else {
+  audio.setVolume(parseFloat(volSlider.value));
+}
+volSlider.addEventListener("input", () => {
+  const v = parseFloat(volSlider.value);
+  audio.setVolume(v);
+  localStorage.setItem(VOL_KEY, v);
 });
 
 mobileDismiss.addEventListener("click", () => { mobileNotice.hidden = true; });

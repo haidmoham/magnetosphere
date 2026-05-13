@@ -30,12 +30,14 @@ export class AudioEngine {
   constructor() {
     this.ctx = null;
     this.analyser = null;
+    this.gainNode = null;
     this.source = null;
     this.mode = null; // "mic" | "system" | "file" | null
     this.audio = null;
     this.stream = null;
     this.freqData = null;
     this.label = "";
+    this._volume = 0.7;   // persisted across source switches
     this._smoothed = { bass: 0, mid: 0, treble: 0 };
     this._bassEnv  = 0;   // slow envelope for onset detection
     this._beat     = false;
@@ -54,6 +56,10 @@ export class AudioEngine {
     a.smoothingTimeConstant = 0.78;
     this.analyser = a;
     this.freqData = new Uint8Array(a.frequencyBinCount);
+
+    const g = this.ctx.createGain();
+    g.gain.value = this._volume;
+    this.gainNode = g;
   }
 
   async _teardownCurrent() {
@@ -69,6 +75,10 @@ export class AudioEngine {
     if (this.source) {
       try { this.source.disconnect(); } catch {}
       this.source = null;
+    }
+    if (this.gainNode) {
+      try { this.gainNode.disconnect(); } catch {}
+      this.gainNode = null;
     }
     if (this.analyser) {
       try { this.analyser.disconnect(); } catch {}
@@ -88,7 +98,8 @@ export class AudioEngine {
     this.stream = stream;
     this.source = this.ctx.createMediaStreamSource(stream);
     this._buildAnalyser();
-    this.source.connect(this.analyser);
+    this.source.connect(this.gainNode);
+    this.gainNode.connect(this.analyser);
     // No connect to destination — would feed back.
     if (this.ctx.state === "suspended") await this.ctx.resume();
     this.mode = "mic";
@@ -114,7 +125,8 @@ export class AudioEngine {
     this.stream = stream;
     this.source = this.ctx.createMediaStreamSource(stream);
     this._buildAnalyser();
-    this.source.connect(this.analyser);
+    this.source.connect(this.gainNode);
+    this.gainNode.connect(this.analyser);
     // No connect to destination — the source tab is still playing the audio out loud.
 
     // If the user clicks "Stop sharing" in the browser bar, drop the stream cleanly.
@@ -136,11 +148,17 @@ export class AudioEngine {
     this.audio = audio;
     this.source = this.ctx.createMediaElementSource(audio);
     this._buildAnalyser();
-    this.source.connect(this.analyser);
+    this.source.connect(this.gainNode);
+    this.gainNode.connect(this.analyser);
     this.analyser.connect(this.ctx.destination); // file path: actually play it out
     if (this.ctx.state === "suspended") await this.ctx.resume();
     this.mode = "file";
     this.label = file.name;
+  }
+
+  setVolume(v) {
+    this._volume = v;
+    if (this.gainNode) this.gainNode.gain.value = v;
   }
 
   async play() {
