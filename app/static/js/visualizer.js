@@ -382,7 +382,7 @@ export class Visualizer {
         uSizeMin:      { value: 0.14 },
         uSizeMax:      { value: 1.60 },
         uSizeCurve:    { value: 3.00 },
-        uShapeMix:     { value: 0.00 },   // 0 = sphere, 1 = heart
+        uShapeMix:     { value: 1.00 },   // 0 = sphere, 1 = heart
       },
       vertexShader,
       fragmentShader,
