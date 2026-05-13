@@ -1354,7 +1354,8 @@ body.ui-hidden #tuning-panel,
 body.ui-hidden #help-btn,
 body.ui-hidden #help-tooltip,
 body.ui-hidden #cast-btn,
-body.ui-hidden #cast-tooltip {
+body.ui-hidden #cast-tooltip,
+body.ui-hidden #spotify-tooltip {
   display: none !important;
 }
 
@@ -1415,4 +1416,96 @@ body.ui-hidden #ui-hide-btn {
   text-align: center;
   backdrop-filter: blur(8px);
   box-shadow: 0 0 24px rgba(255, 85, 119, 0.5);
+  z-index: 30;
+  transition: background 0.2s, border-color 0.2s, color 0.2s, box-shadow 0.2s;
+}
+
+/* Info variant — used for non-error notifications (e.g. Spotify connected). */
+#error-toast.info {
+  background: rgba(0, 18, 30, 0.88);
+  border-color: rgba(0, 240, 255, 0.55);
+  color: var(--neon-cyan);
+  box-shadow: 0 0 24px rgba(0, 240, 255, 0.25);
+}
+
+/* ── Spotify tooltip ──────────────────────────────────────────────────────
+   Appears above the source picker when the user clicks the active Spotify
+   button. Explains the dual-source (Spotify + audio) flow and holds the
+   disconnect action so accidental clicks don't break the session.
+   ──────────────────────────────────────────────────────────────────────── */
+#spotify-tooltip {
+  position: fixed;
+  bottom: 178px;   /* sits just above the source picker (bottom: 100px) */
+  left: 50%;
+  transform: translateX(-50%);
+  width: 310px;
+  background: rgba(8, 0, 26, 0.94);
+  border: 1px solid rgba(0, 240, 255, 0.4);
+  border-radius: 4px;
+  padding: 14px 16px;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 0 28px rgba(0, 240, 255, 0.18);
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.sp-title {
+  font-family: "Orbitron", monospace;
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--neon-cyan);
+  text-shadow: 0 0 8px rgba(0, 240, 255, 0.6);
+}
+
+.sp-body {
+  font-family: "Share Tech Mono", monospace;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--text-dim);
+  line-height: 1.55;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.sp-body p { margin: 0; }
+
+.sp-body strong { color: var(--text-soft); }
+
+.sp-body ul {
+  padding-left: 14px;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  list-style: none;
+}
+
+.sp-note {
+  color: rgba(180, 160, 220, 0.55);
+  font-size: 10.5px;
+}
+
+#spotify-disconnect {
+  appearance: none;
+  background: transparent;
+  border: 1px solid rgba(255, 61, 240, 0.3);
+  border-radius: 3px;
+  color: rgba(255, 61, 240, 0.6);
+  font-family: "Share Tech Mono", monospace;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  padding: 5px 10px;
+  cursor: pointer;
+  align-self: flex-start;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+#spotify-disconnect:hover {
+  border-color: rgba(255, 61, 240, 0.65);
+  color: rgba(255, 61, 240, 0.9);
 }
