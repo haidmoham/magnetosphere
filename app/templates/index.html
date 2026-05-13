@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>Voidpulse</title>
   <meta name="description" content="music visualizer" />
   <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='img/favicon.svg') }}" />
@@ -382,7 +382,7 @@
 
     <div id="mobile-cta">more features on desktop</div>
 
-    <button id="mobile-hide-btn">⊘</button>
+    <button id="mobile-hide-btn">⊘ hide ui</button>
 
     <div id="mobile-panel">
       <div class="mobile-panel-row">
@@ -402,6 +402,11 @@
       </div>
       <div class="mobile-panel-actions">
         <button id="mobile-reset-btn">↺ reset</button>
+        <div class="mobile-zoom-group">
+          <button id="mobile-zoom-out">−</button>
+          <span class="mobile-zoom-label">zoom</span>
+          <button id="mobile-zoom-in">+</button>
+        </div>
       </div>
     </div>
 
