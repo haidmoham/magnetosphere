@@ -1291,6 +1291,171 @@ body::after {
   line-height: 1.5;
 }
 
+/* ─── mobile demo picker overlay ─────────────────────────────── */
+#mobile-demo {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(ellipse at 50% 40%, #1e0038 0%, #0c0022 55%, #04000e 100%);
+}
+#mobile-demo[hidden] { display: none; }
+
+.md-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 28px;
+  padding: 36px 24px 40px;
+  width: 100%;
+  max-width: 420px;
+}
+
+.md-wordmark {
+  font-family: "Orbitron", monospace;
+  font-weight: 900;
+  font-size: 28px;
+  letter-spacing: 0.28em;
+  color: var(--neon-cyan);
+  text-shadow: 0 0 24px rgba(0, 240, 255, 0.8), 0 0 48px rgba(0, 240, 255, 0.3);
+  text-align: center;
+}
+.md-sub {
+  font-family: "Share Tech Mono", monospace;
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  color: rgba(246, 214, 255, 0.45);
+  text-transform: uppercase;
+  text-align: center;
+  margin-top: 6px;
+}
+
+/* Track card list */
+.md-tracks {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
+
+/* Individual track card — tappable */
+.md-track {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: 12px 14px;
+  background: rgba(10, 0, 30, 0.65);
+  border: 1px solid rgba(0, 240, 255, 0.14);
+  border-radius: 6px;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 180ms ease, background 180ms ease, box-shadow 180ms ease;
+  appearance: none;
+  -webkit-appearance: none;
+}
+.md-track:active,
+.md-track.md-playing {
+  border-color: rgba(0, 240, 255, 0.55);
+  background: rgba(0, 240, 255, 0.08);
+  box-shadow: 0 0 20px rgba(0, 240, 255, 0.18);
+}
+
+.md-art {
+  width: 52px;
+  height: 52px;
+  border-radius: 4px;
+  object-fit: cover;
+  flex-shrink: 0;
+  background: rgba(0, 240, 255, 0.06);
+}
+.md-info {
+  flex: 1;
+  overflow: hidden;
+}
+.md-track-title {
+  font-family: "Orbitron", monospace;
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  color: rgba(246, 214, 255, 0.9);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.md-track-artist {
+  font-family: "Share Tech Mono", monospace;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  color: rgba(0, 240, 255, 0.5);
+  margin-top: 3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.md-play-icon {
+  font-size: 16px;
+  color: rgba(0, 240, 255, 0.55);
+  flex-shrink: 0;
+  transition: color 180ms ease, text-shadow 180ms ease;
+}
+.md-track.md-playing .md-play-icon {
+  color: var(--neon-cyan);
+  text-shadow: 0 0 10px rgba(0, 240, 255, 0.8);
+}
+
+/* Loading dots */
+.md-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 32px 0;
+}
+.md-loading-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(0, 240, 255, 0.5);
+  animation: md-pulse 1.2s ease-in-out infinite;
+}
+.md-loading-dot:nth-child(2) { animation-delay: 0.2s; }
+.md-loading-dot:nth-child(3) { animation-delay: 0.4s; }
+@keyframes md-pulse {
+  0%, 80%, 100% { opacity: 0.2; transform: scale(0.8); }
+  40% { opacity: 1; transform: scale(1); }
+}
+
+/* Empty / error state */
+.md-empty {
+  font-family: "Share Tech Mono", monospace;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  color: rgba(246, 214, 255, 0.35);
+  text-align: center;
+  padding: 24px 0;
+}
+
+/* Skip button */
+#md-skip {
+  appearance: none;
+  -webkit-appearance: none;
+  background: transparent;
+  border: none;
+  font-family: "Share Tech Mono", monospace;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  color: rgba(246, 214, 255, 0.28);
+  cursor: pointer;
+  padding: 8px 16px;
+  transition: color 160ms ease;
+}
+#md-skip:active { color: rgba(246, 214, 255, 0.6); }
+
 /* ─── mobile notice (hidden on desktop) ──────────────────────── */
 #mobile-notice {
   display: none;

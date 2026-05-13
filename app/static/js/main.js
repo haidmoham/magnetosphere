@@ -155,15 +155,86 @@ async function connectBeatTracker() {
   if (bt) await bt.connect(audio.source);
 }
 
+// ── Mobile detection ─────────────────────────────────────────────────────────
+// Show the demo picker on any touch device narrower than 900px — that covers
+// phones and most tablets. Desktop users with touchscreens are unaffected.
+const isMobile = navigator.maxTouchPoints > 0 && window.innerWidth < 900;
+
+// ── Mobile demo picker ───────────────────────────────────────────────────────
+const mobileDemoEl = document.getElementById("mobile-demo");
+const mdTracksEl   = document.getElementById("md-tracks");
+const mdSkipBtn    = document.getElementById("md-skip");
+let _activeTrackBtn = null;
+
+async function loadDemoTracks() {
+  try {
+    const res = await fetch("/auth/spotify/demos");
+    const tracks = await res.json();
+    if (!Array.isArray(tracks) || tracks.length === 0) {
+      mdTracksEl.innerHTML = '<div class="md-empty">previews unavailable — use mic below</div>';
+      return;
+    }
+    mdTracksEl.innerHTML = "";
+    tracks.forEach((track) => {
+      const btn = document.createElement("button");
+      btn.className = "md-track";
+      btn.innerHTML = `
+        <img class="md-art" src="${track.art_url || ""}" alt="">
+        <div class="md-info">
+          <div class="md-track-title">${track.title}</div>
+          <div class="md-track-artist">${track.artist}</div>
+        </div>
+        <span class="md-play-icon">▶</span>
+      `;
+      btn.addEventListener("click", async () => {
+        // Highlight active card.
+        if (_activeTrackBtn) _activeTrackBtn.classList.remove("md-playing");
+        _activeTrackBtn = btn;
+        btn.classList.add("md-playing");
+        btn.querySelector(".md-play-icon").textContent = "▐▐";
+
+        try {
+          await audio.loadUrl(track.preview_url, track.title);
+          await audio.play();
+          connectBeatTracker().catch(() => {});
+        } catch (err) {
+          showError(err.message || String(err));
+          return;
+        }
+        refreshUi();
+        // Dismiss the overlay after a short beat so the cloud is already
+        // reacting before it comes fully into view.
+        setTimeout(() => { mobileDemoEl.hidden = true; }, 600);
+      });
+      mdTracksEl.appendChild(btn);
+    });
+  } catch {
+    mdTracksEl.innerHTML = '<div class="md-empty">couldn\'t load previews — use mic below</div>';
+  }
+}
+
+function showMobileDemo() {
+  mobileDemoEl.hidden = false;
+  loadDemoTracks();
+}
+
+mdSkipBtn.addEventListener("click", () => {
+  mobileDemoEl.hidden = true;
+});
+
 // Photosensitivity warning — shown once per browser session.
 const ewOverlay = document.getElementById("epilepsy-warning");
 const ewProceed = document.getElementById("ew-proceed");
 if (sessionStorage.getItem("voidpulse.ew.ack")) {
   ewOverlay.hidden = true;
+  // EW already seen — show mobile demo immediately if on mobile.
+  if (isMobile) showMobileDemo();
 } else {
   ewProceed.addEventListener("click", () => {
     sessionStorage.setItem("voidpulse.ew.ack", "1");
     ewOverlay.hidden = true;
+    // Show mobile demo after warning is dismissed.
+    if (isMobile) showMobileDemo();
   }, { once: true });
 }
 
@@ -1102,6 +1173,8 @@ disruptRadiusSlider.addEventListener("input", () => {
   viz.setCursorRadius(r);
 });
 
+// On mobile the demo picker replaces the notice; on desktop show it as before.
+if (isMobile) mobileNotice.hidden = true;
 mobileDismiss.addEventListener("click", () => { mobileNotice.hidden = true; });
 
 spotifyDisconnect.addEventListener("click", (e) => {

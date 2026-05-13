@@ -172,6 +172,85 @@ def logout():
 # → audio features. We proxy through Flask to avoid CORS and to keep the
 # chain on the backend so the frontend only sees one clean response.
 
+# ── Demo tracks ──────────────────────────────────────────────────────────────
+# Three 30-second preview snippets served to mobile visitors. Fetched via
+# Spotify client credentials (no user login required) and cached for 24h so
+# the server isn't hammered on every mobile page load.
+
+_demos_cache: dict = {}          # { tracks: [...], fetched_at: float }
+_DEMOS_TTL   = 86_400            # 24 hours
+
+# Search queries: (track title, artist hint). Freeform search — no IDs needed.
+_DEMO_SEARCHES = [
+    ("This Modern Love",        "Bloc Party"),
+    ("Balam Pichkari",          "Shalmali Kholgade"),
+    ("I Drift Out Then Return", "Small Town Kid"),
+]
+
+
+@spotify_bp.route("/demos")
+def demos():
+    """Return metadata + preview URLs for the three demo tracks.
+    Uses client credentials — no user authentication required."""
+    import time as _time
+    now = _time.time()
+
+    # Serve from cache if still fresh.
+    if _demos_cache.get("fetched_at", 0) + _DEMOS_TTL > now:
+        return jsonify(_demos_cache["tracks"])
+
+    client_id, client_secret = _client_creds()
+    if not client_id:
+        return jsonify({"error": "not_configured"}), 503
+
+    # App-level token (client credentials — no user scope needed).
+    r = requests.post(
+        SPOTIFY_TOKEN_URL,
+        data={"grant_type": "client_credentials"},
+        auth=(client_id, client_secret),
+        timeout=10,
+    )
+    if not r.ok:
+        return jsonify({"error": "token_failed", "detail": r.text}), 502
+
+    token = r.json()["access_token"]
+    headers = {"Authorization": f"Bearer {token}"}
+    tracks = []
+
+    for title, artist in _DEMO_SEARCHES:
+        try:
+            sr = requests.get(
+                "https://api.spotify.com/v1/search",
+                params={"q": f"track:{title} artist:{artist}", "type": "track", "limit": 1},
+                headers=headers,
+                timeout=8,
+            )
+            if not sr.ok:
+                continue
+            items = sr.json().get("tracks", {}).get("items", [])
+            if not items:
+                continue
+            item = items[0]
+            preview = item.get("preview_url")
+            if not preview:
+                continue          # skip tracks Spotify won't preview
+            imgs = item["album"].get("images", [])
+            art  = imgs[1]["url"] if len(imgs) > 1 else (imgs[0]["url"] if imgs else None)
+            tracks.append({
+                "title":       item["name"],
+                "artist":      ", ".join(a["name"] for a in item["artists"]),
+                "preview_url": preview,
+                "art_url":     art,
+                "spotify_id":  item["id"],
+            })
+        except requests.RequestException:
+            continue
+
+    _demos_cache["tracks"]     = tracks
+    _demos_cache["fetched_at"] = now
+    return jsonify(tracks)
+
+
 RECCOBEATS_BASE = "https://api.reccobeats.com/v1"
 
 
