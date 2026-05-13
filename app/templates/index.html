@@ -66,7 +66,7 @@
       </div>
       <div class="tuning-body">
         <div class="tuning-section">
-          <div class="section-label">shape</div>
+          <div class="section-label">cloud</div>
           <div class="slider-row">
             <label>breathe min</label>
             <input type="range" data-uniform="uBreatheMin" min="0.2" max="1.2" step="0.01" value="0.20">
@@ -96,6 +96,35 @@
             <label>size curve</label>
             <input type="range" data-uniform="uSizeCurve" min="0.3" max="3.0" step="0.05" value="3.00">
             <span class="slider-val">3.00</span>
+          </div>
+        </div>
+
+        <div class="tuning-section">
+          <div class="section-label">floor</div>
+          <div class="slider-row">
+            <label>max height</label>
+            <input type="range" data-uniform="fMaxH" min="5" max="40" step="1" value="18">
+            <span class="slider-val">18.00</span>
+          </div>
+          <div class="slider-row">
+            <label>scroll</label>
+            <input type="range" data-uniform="fScroll" min="0" max="15" step="0.5" value="5">
+            <span class="slider-val">5.00</span>
+          </div>
+          <div class="slider-row">
+            <label>bass scroll</label>
+            <input type="range" data-uniform="fScrollBass" min="0" max="60" step="1" value="22">
+            <span class="slider-val">22.00</span>
+          </div>
+          <div class="slider-row">
+            <label>peak decay</label>
+            <input type="range" data-uniform="fDecay" min="0.50" max="0.97" step="0.01" value="0.80">
+            <span class="slider-val">0.80</span>
+          </div>
+          <div class="slider-row">
+            <label>white-hot</label>
+            <input type="range" data-uniform="fHotCurve" min="1.0" max="5.0" step="0.1" value="2.5">
+            <span class="slider-val">2.50</span>
           </div>
         </div>
         <!-- future sections (e.g. "color", "motion") drop in here -->

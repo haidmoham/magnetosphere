@@ -11,7 +11,14 @@ const GRID_ROWS      = 32;   // depth slices front→back
 const GRID_WIDTH     = 900;
 const GRID_DEPTH     = 380;
 const GRID_Z_CENTER  = -80;  // world-Z of grid midpoint
-const GRID_MAX_H     = 18;   // max vertex lift (units)
+// Floor tuning defaults — overridable via the tuning panel (fMaxH, fScroll, …).
+const FLOOR_DEFAULTS = {
+  fMaxH:       18,    // max vertex lift (units)
+  fScroll:      5,    // base scroll speed toward camera
+  fScrollBass: 22,    // extra scroll speed driven by bass
+  fDecay:    0.80,    // peak fall rate (lower = faster decay)
+  fHotCurve:  2.5,    // white-hot bleach curve (higher = harder to bleach)
+};
 
 const vertexShader = /* glsl */ `
   uniform float uTime;
@@ -132,6 +139,9 @@ export class Visualizer {
     this._cGrid  = new THREE.Color();
     this._cFog   = new THREE.Color();
 
+    // Floor tuning (live-editable via setTuning).
+    Object.assign(this, FLOOR_DEFAULTS);
+
     this._buildGrid();
     this._buildParticles();
     this.clock = new THREE.Clock();
@@ -203,14 +213,19 @@ export class Visualizer {
     const col = this.grid.geometry.attributes.color;
 
     if (freqData) {
+      const maxH     = this.fMaxH;
+      const decay    = this.fDecay;
+      const attack   = 1 - decay;
+      const hotCurve = this.fHotCurve;
+
       for (let c = 0; c < GRID_COLS; c++) {
         const t      = c / (GRID_COLS - 1);          // 0=bass … 1=treble
         const binIdx = Math.max(1, Math.round(Math.pow(220, t)));
         const raw    = (freqData[binIdx] || 0) / 255;
-        const target = raw * GRID_MAX_H;
+        const target = raw * maxH;
 
         const h = this._gridColH;
-        h[c] = target > h[c] ? target : h[c] * 0.80 + target * 0.20;
+        h[c] = target > h[c] ? target : h[c] * decay + target * attack;
 
         // Peak colour: magenta at bass end, cyan at treble end.
         const pr = 1.00 - t * 1.00;  // R: 1→0
@@ -223,8 +238,8 @@ export class Visualizer {
           pos.setY(r * GRID_COLS + c, vertH);
 
           // Normalised height drives colour from base → peak → white-hot.
-          const nH      = vertH / GRID_MAX_H;
-          const white   = Math.pow(nH, 2.5);           // only extreme peaks bleach
+          const nH      = vertH / maxH;
+          const white   = Math.pow(nH, hotCurve);      // higher curve = harder to bleach
           const fr = 0.06 + (pr + (1.0 - pr) * white - 0.06) * nH;
           const fg = 0.02 + (pg + (1.0 - pg) * white - 0.02) * nH;
           const fb = 0.18 + (pb + (1.0 - pb) * white - 0.18) * nH;
@@ -360,7 +375,7 @@ export class Visualizer {
 
     // Scroll grid toward camera; loop seamlessly every row-spacing.
     this.grid.position.z =
-      (this.grid.position.z + dt * (5 + bands.bass * 22)) % this._gridRowSpacing;
+      (this.grid.position.z + dt * (this.fScroll + bands.bass * this.fScrollBass)) % this._gridRowSpacing;
 
     this.camera.position.x = Math.sin(t * 0.08) * 13;
     this.camera.position.y = 12 + Math.cos(t * 0.06) * 2.5;
@@ -370,8 +385,14 @@ export class Visualizer {
   }
 
   // Live-tuning hook for the debug panel.
+  //   uX → shader uniform on the particle material
+  //   fX → instance property used by the floor (grid) update
   setTuning(name, value) {
-    const u = this.particles.material.uniforms;
-    if (u[name]) u[name].value = value;
+    if (name.startsWith("u")) {
+      const u = this.particles.material.uniforms;
+      if (u[name]) u[name].value = value;
+    } else if (name.startsWith("f")) {
+      if (name in this) this[name] = value;
+    }
   }
 }
