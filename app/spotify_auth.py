@@ -158,3 +158,50 @@ def logout():
     for k in ("spotify_access_token", "spotify_refresh_token", "spotify_token_expires_at"):
         session.pop(k, None)
     return jsonify({"ok": True})
+
+
+# ── ReccoBeats audio-features proxy ──────────────────────────────────
+# Spotify killed /v1/audio-analysis + /v1/audio-features for new apps in
+# Nov 2024. ReccoBeats (https://reccobeats.com) rebuilt the audio-features
+# half: same field names + ranges as the deprecated Spotify endpoint
+# (acousticness/danceability/energy/instrumentalness/key/liveness/loudness/
+# mode/speechiness/tempo/valence). No beat/section/segment-level data —
+# that side of Spotify's old API has no equivalent.
+#
+# Lookup is a two-step chain: Spotify track id → ReccoBeats internal UUID
+# → audio features. We proxy through Flask to avoid CORS and to keep the
+# chain on the backend so the frontend only sees one clean response.
+
+RECCOBEATS_BASE = "https://api.reccobeats.com/v1"
+
+
+@spotify_bp.route("/features/<spotify_id>")
+def features(spotify_id: str):
+    """Return ReccoBeats audio features for a Spotify track id.
+    Two-step lookup hidden behind a single endpoint."""
+    if not spotify_id.isalnum() or len(spotify_id) > 32:
+        return jsonify({"error": "invalid_id"}), 400
+    try:
+        lookup = requests.get(
+            f"{RECCOBEATS_BASE}/track",
+            params={"ids": spotify_id},
+            timeout=4,
+        )
+        if not lookup.ok:
+            return jsonify({"error": "reccobeats_lookup_failed", "status": lookup.status_code}), 502
+        content = lookup.json().get("content", [])
+        if not content:
+            # Track isn't in ReccoBeats' catalog (rare for popular tracks,
+            # common for obscure / regional / very new ones).
+            return jsonify({"error": "track_not_indexed"}), 404
+        recco_id = content[0]["id"]
+
+        feats = requests.get(
+            f"{RECCOBEATS_BASE}/track/{recco_id}/audio-features",
+            timeout=4,
+        )
+        if not feats.ok:
+            return jsonify({"error": "reccobeats_features_failed", "status": feats.status_code}), 502
+        return jsonify(feats.json())
+    except requests.RequestException as e:
+        return jsonify({"error": "reccobeats_unreachable", "detail": str(e)}), 502

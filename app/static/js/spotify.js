@@ -1,27 +1,26 @@
 // Spotify listening-along watcher.
 //
-// We don't play audio in the browser. Instead we poll Spotify's Web API for
-// what's currently playing on the user's account (any device — phone, desktop
-// app, speaker, etc.) and fetch the per-track audio analysis on track change.
-// A drift-corrected scheduler fires beat events against an estimated playhead.
+// Spotify deprecated the rich /v1/audio-analysis endpoint for new apps in
+// Nov 2024 (and the API on which this project's auth was registered is post-
+// cutoff). So we can't pull beat/bar/section/segment timestamps anymore. We
+// CAN still pull track-level audio features via ReccoBeats — a free public
+// API that rebuilt the deprecated /audio-features half with identical field
+// names + ranges (energy/valence/tempo/key/etc.). Proxied through Flask at
+// /auth/spotify/features/{spotifyId} to avoid CORS.
 //
-// Why this approach:
-//   - No Chrome `getDisplayMedia` sharing bar — audio never enters the browser
-//   - Works with hardware controls (media keys, AirPod stems, etc.)
-//   - Spotify Free works (no `streaming` scope, no Web Playback SDK)
-//   - Matches the original iTunes Magnetosphere model: the plugin reacted
-//     to iTunes' internal playback data, it didn't play music itself
+// What this watcher does:
+//   - Polls /v1/me/player every 1500ms (Spotify Web API) — knows what track
+//     is playing, where in the track, on which device
+//   - On track change: fetch ReccoBeats features → emit onFeaturesLoad
+//   - Per-frame tick(): synthesizes {bands, beat} from tempo + playhead
+//     so the visualizer pulses in time with the song even without real beat
+//     timestamps. Won't align to actual downbeats (we have no offset data),
+//     but the *cadence* matches.
 //
-// Trade-off: polling latency. /v1/me/player isn't push-based. We poll every
-// ~1.5s and extrapolate position locally between polls. Pause/seek detection
-// lags by one poll cycle, which is fine for a visualizer.
+// Phase 5.4 (next): pair with Essentia.js BeatTrackerMultiFeature when an
+// audio source is also active — gets us real beat alignment.
 
 const POLL_INTERVAL_MS = 1500;
-
-// Tolerance window around a beat's exact timestamp where we still consider
-// it "now." Bigger = beats are more forgiving but might double-fire on seeks;
-// smaller = miss beats on slow frames. 60ms ≈ 3.6 frames at 60fps.
-const BEAT_WINDOW_MS = 60;
 
 export class SpotifyWatcher {
   constructor() {
@@ -29,31 +28,31 @@ export class SpotifyWatcher {
     this._token          = null;
     this._tokenExpiresAt = 0;
 
-    // Current playback snapshot (refreshed by _poll, extrapolated between)
-    this.currentTrack    = null;   // Spotify track object
+    // Current playback snapshot
+    this.currentTrack    = null;
     this.currentDevice   = null;
     this.isPlaying       = false;
     this._anchorPosMs    = 0;      // ms into the track at last poll
     this._anchorClockMs  = 0;      // performance.now() at last poll
 
-    // Audio analysis (fetched on track change)
-    this.analysis        = null;   // { beats, bars, sections, segments, track }
-    this._analysisTrackId = null;
-    this._nextBeatIdx    = 0;
-    this._segIdxCache    = 0;
+    // Audio features (ReccoBeats), refreshed on track change
+    this.features        = null;   // { tempo, energy, valence, key, ... } or null
+    this._featuresTrackId = null;
+
+    // BPM pulse state
+    this._lastPulseMs    = -Infinity;
 
     // Poll loop
     this._pollTimer      = null;
     this._running        = false;
 
-    // Public hooks (assigned by main.js)
-    this.onTrackChange   = null;   // (track, device)               => void
-    this.onStateChange   = null;   // ({track, device, isPlaying})  => void
-    this.onAnalysisLoad  = null;   // (analysis)                    => void
-    this.onError         = null;   // ({type, message})             => void
+    // Public hooks
+    this.onTrackChange   = null;   // (track, device)              => void
+    this.onStateChange   = null;   // ({track, device, isPlaying}) => void
+    this.onFeaturesLoad  = null;   // (features)                   => void
+    this.onError         = null;   // ({type, message})            => void
   }
 
-  /** Begin watching. Throws if not authenticated. */
   async start() {
     if (this._running) return;
     await this._refreshToken();
@@ -65,124 +64,76 @@ export class SpotifyWatcher {
     );
   }
 
-  /** Stop polling and clear all state. */
   stop() {
     this._running = false;
     if (this._pollTimer) { clearInterval(this._pollTimer); this._pollTimer = null; }
     this.currentTrack  = null;
     this.currentDevice = null;
     this.isPlaying     = false;
-    this.analysis      = null;
-    this._nextBeatIdx  = 0;
-    this._segIdxCache  = 0;
+    this.features      = null;
+    this._featuresTrackId = null;
+    this._lastPulseMs  = -Infinity;
   }
 
   /**
-   * Called once per render frame. Returns:
-   *   { bands: {bass, mid, treble}, beat: bool, positionMs: number }
+   * Called once per render frame. Returns {bands, beat, positionMs}.
    *
-   * `bands` is synthesized from segment loudness so the existing visualizer
-   * drivers (breathing, point size, etc.) keep working without real FFT data.
-   * `beat` fires true on the frame a beat's timestamp crosses the playhead.
+   * Synthesis approach:
+   *   - We know tempo (BPM) from ReccoBeats and current playhead from polling
+   *   - Beat interval = 60000 / tempo ms
+   *   - Fire a synthetic `beat` every interval, snap to BPM grid
+   *   - `bands` decays exponentially after each pulse (peaks on beat, dips
+   *     between) so the visualizer's bass-driven breathing has a heartbeat
+   *
+   * Limitation: we have no offset, so the pulses won't necessarily land
+   * on the song's actual downbeats — just at the right *cadence*. With an
+   * Essentia.js beat tracker (Phase 5.4) running on a paired audio source,
+   * we'd snap to real beats.
    */
   tick() {
     const positionMs = this.estimatePositionMs();
+    if (!this.isPlaying || !this.features?.tempo) {
+      return { bands: ZERO_BANDS, beat: false, positionMs };
+    }
+    const beatIntervalMs = 60000 / this.features.tempo;
+
+    // Fire a beat if we've crossed a grid line since the last pulse.
+    let beat = false;
+    if (positionMs - this._lastPulseMs >= beatIntervalMs * 0.95) {
+      beat = true;
+      // Snap to grid so drift doesn't accumulate.
+      this._lastPulseMs = Math.floor(positionMs / beatIntervalMs) * beatIntervalMs;
+    }
+
+    // Energy curve: peaks at the pulse, decays before the next one. Half-life
+    // tuned so we hit ~25% of peak right before the next beat — gives a
+    // recognizable "thump-thump" feel rather than mush.
+    const sinceMs = Math.max(0, positionMs - this._lastPulseMs);
+    const decayK  = Math.log(2) / (beatIntervalMs * 0.45);
+    const env     = Math.exp(-sinceMs * decayK);
+
+    // Scale by track energy so soft tracks feel softer.
+    const trackE  = clamp01(this.features.energy ?? 0.6);
+    const peak    = 0.35 + trackE * 0.6;     // 0.35..0.95 peak amplitude
+    const amp     = env * peak;
     return {
-      bands:      this._synthBands(positionMs),
-      beat:       this._consumeBeat(positionMs),
+      bands: {
+        bass:   amp,
+        mid:    amp * 0.75,
+        treble: amp * 0.50,
+      },
+      beat,
       positionMs,
     };
   }
 
-  /** Best estimate of current playhead (ms into track) using local clock drift. */
   estimatePositionMs() {
     if (!this._anchorClockMs) return 0;
     if (!this.isPlaying)      return this._anchorPosMs;
     return this._anchorPosMs + (performance.now() - this._anchorClockMs);
   }
 
-  // ── beat scheduler ────────────────────────────────────────────────
-
-  /**
-   * Returns true if a beat crosses the playhead this frame.
-   * `_nextBeatIdx` is the cursor into `analysis.beats`; it monotonically
-   * advances during playback and is re-snapped on poll (to handle seeks).
-   */
-  _consumeBeat(positionMs) {
-    if (!this.analysis || !this.isPlaying) return false;
-    const beats = this.analysis.beats;
-    let fired = false;
-    while (this._nextBeatIdx < beats.length) {
-      const beatMs = beats[this._nextBeatIdx].start * 1000;
-      if (beatMs > positionMs + BEAT_WINDOW_MS) break;          // not yet
-      if (beatMs > positionMs - BEAT_WINDOW_MS * 4) fired = true; // close enough
-      this._nextBeatIdx++;
-    }
-    return fired;
-  }
-
-  /**
-   * Synthesize bass/mid/treble from Spotify's per-segment loudness curve.
-   * Without this the visualizer would freeze between beats (no continuous
-   * energy signal driving breathing / rotation / particle size).
-   *
-   * Each segment exposes a piecewise loudness envelope:
-   *   loudness_start → loudness_max (at loudness_max_time) → loudness_end
-   * We interpolate within that envelope and map dB → 0–1.
-   *
-   * Bass gets the full energy; mid is slightly damped; treble more so.
-   * Future refinement (Phase 5.3): use segment.timbre[1] for true brightness
-   * and segment.pitches for harmonic content distribution.
-   */
-  _synthBands(positionMs) {
-    if (!this.analysis || !this.isPlaying) return { bass: 0, mid: 0, treble: 0 };
-    const seg = this._currentSegment(positionMs);
-    if (!seg) return { bass: 0, mid: 0, treble: 0 };
-
-    const tSec    = positionMs / 1000;
-    const localT  = Math.max(0, tSec - seg.start);
-    const peakT   = seg.loudness_max_time;
-    const tailDur = Math.max(0.001, seg.duration - peakT);
-    let dB;
-    if (localT < peakT) {
-      dB = lerp(seg.loudness_start, seg.loudness_max, peakT > 0 ? localT / peakT : 1);
-    } else {
-      dB = lerp(seg.loudness_max, seg.loudness_end, Math.min(1, (localT - peakT) / tailDur));
-    }
-    // Spotify loudness is in dB (typically -60 to 0). Map to 0–1.
-    const energy = clamp01((dB + 60) / 60);
-    return {
-      bass:   energy,
-      mid:    energy * 0.78,
-      treble: energy * 0.55,
-    };
-  }
-
-  /** Find the segment containing `positionMs`. Cached index makes this O(1) amortized. */
-  _currentSegment(positionMs) {
-    if (!this.analysis || !this.analysis.segments.length) return null;
-    const tSec = positionMs / 1000;
-    const segs = this.analysis.segments;
-    let idx = this._segIdxCache;
-    if (idx >= segs.length || segs[idx].start > tSec) idx = 0;
-    while (idx < segs.length - 1 && segs[idx + 1].start <= tSec) idx++;
-    this._segIdxCache = idx;
-    return segs[idx];
-  }
-
-  /** After a seek (detected by position discontinuity), snap the beat
-      cursor forward to the right place. */
-  _resyncBeatIndex() {
-    if (!this.analysis) return;
-    const tMs = this.estimatePositionMs();
-    const beats = this.analysis.beats;
-    let idx = 0;
-    while (idx < beats.length && beats[idx].start * 1000 < tMs - BEAT_WINDOW_MS) idx++;
-    this._nextBeatIdx = idx;
-    this._segIdxCache = 0;  // segment lookup will re-scan from start
-  }
-
-  // ── polling ───────────────────────────────────────────────────────
+  // ── polling ──────────────────────────────────────────────────────
 
   async _poll() {
     if (!this._running) return;
@@ -190,19 +141,11 @@ export class SpotifyWatcher {
     const r = await fetch("https://api.spotify.com/v1/me/player", {
       headers: { Authorization: `Bearer ${token}` },
     });
-
-    // 204 = no active device / nothing playing
-    if (r.status === 204) {
-      this._handleNoPlayback();
-      return;
-    }
+    if (r.status === 204) { this._handleNoPlayback(); return; }
     if (!r.ok) throw new Error(`Player fetch failed: ${r.status}`);
 
     const data = await r.json();
-    if (!data || !data.item) {
-      this._handleNoPlayback();
-      return;
-    }
+    if (!data || !data.item) { this._handleNoPlayback(); return; }
 
     const newTrackId   = data.item.id;
     const trackChanged = newTrackId !== this.currentTrack?.id;
@@ -214,18 +157,15 @@ export class SpotifyWatcher {
     this._anchorClockMs = performance.now();
 
     if (trackChanged) {
-      this._nextBeatIdx = 0;
-      this._segIdxCache = 0;
-      this.analysis     = null;
+      this.features       = null;
+      this._lastPulseMs   = -Infinity;
       this.onTrackChange?.(this.currentTrack, this.currentDevice);
-      // Analysis fetch runs in the background; visualizer falls back to
-      // zero-energy/no-beats until it arrives.
-      this._fetchAnalysis(newTrackId).catch(err => {
-        this.onError?.({ type: "analysis_fetch", message: err.message || String(err) });
+      this._fetchFeatures(newTrackId).catch(err => {
+        // Most likely "track_not_indexed" (404) — fine, just no auto-palette.
+        if (!String(err.message).includes("404")) {
+          this.onError?.({ type: "features", message: err.message || String(err) });
+        }
       });
-    } else {
-      // Same track: re-sync against the new position in case of seek.
-      this._resyncBeatIndex();
     }
 
     this.onStateChange?.({
@@ -240,34 +180,26 @@ export class SpotifyWatcher {
     this.currentTrack   = null;
     this.currentDevice  = null;
     this.isPlaying      = false;
-    this.analysis       = null;
-    this._nextBeatIdx   = 0;
+    this.features       = null;
+    this._lastPulseMs   = -Infinity;
     this.onStateChange?.({ track: null, device: null, isPlaying: false });
   }
 
-  async _fetchAnalysis(trackId) {
-    const token = await this._getFreshToken();
-    const r = await fetch(`https://api.spotify.com/v1/audio-analysis/${trackId}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    if (!r.ok) throw new Error(`Audio analysis fetch failed: ${r.status}`);
-    const data = await r.json();
-    // Race protection: the user may have skipped to another track while
-    // we were fetching. Discard stale results.
-    if (trackId !== this.currentTrack?.id) return;
-    this.analysis = {
-      beats:    data.beats    || [],
-      bars:     data.bars     || [],
-      sections: data.sections || [],
-      segments: data.segments || [],
-      track:    data.track    || {},
-    };
-    this._analysisTrackId = trackId;
-    this._resyncBeatIndex();
-    this.onAnalysisLoad?.(this.analysis);
+  async _fetchFeatures(spotifyId) {
+    const r = await fetch(`/auth/spotify/features/${spotifyId}`);
+    if (!r.ok) {
+      const body = await r.json().catch(() => ({}));
+      throw new Error(`${r.status} ${body.error || "features fetch failed"}`);
+    }
+    const feats = await r.json();
+    // Race protection: discard if user has skipped to another track.
+    if (spotifyId !== this.currentTrack?.id) return;
+    this.features         = feats;
+    this._featuresTrackId = spotifyId;
+    this.onFeaturesLoad?.(feats);
   }
 
-  // ── token helpers ─────────────────────────────────────────────────
+  // ── token helpers ────────────────────────────────────────────────
 
   async _refreshToken() {
     const r = await fetch("/auth/spotify/token");
@@ -284,5 +216,5 @@ export class SpotifyWatcher {
   }
 }
 
-function lerp(a, b, t)   { return a + (b - a) * t; }
-function clamp01(v)      { return v < 0 ? 0 : v > 1 ? 1 : v; }
+const ZERO_BANDS = { bass: 0, mid: 0, treble: 0 };
+function clamp01(v) { return v < 0 ? 0 : v > 1 ? 1 : v; }

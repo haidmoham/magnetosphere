@@ -155,21 +155,49 @@ loudness envelopes, tempo, key, time signature, energy, valence.
 - [x] Spotify source button (gated on server-side `configured` flag)
 - [x] `audio.useSpotify()` stub mode
 
-**Phase 5.2 — Listening-along watcher + beat scheduler (active)**
+**Phase 5.2 — Listening-along watcher + beat scheduler (done; partly invalidated)**
 - [x] Drop Web Playback SDK; rewrite as `SpotifyWatcher` (polling)
 - [x] Reduce OAuth scope to `user-read-playback-state` only
 - [x] Drift-corrected playhead estimator
-- [x] Audio analysis fetch + race-safe storage
+- [x] Audio analysis fetch
 - [x] Beat scheduler firing `uBurst` on beat timestamps
 - [x] Synthesised bass/mid/treble from segment loudness envelope
-- [ ] Bar/section/segment wiring (next sub-phase)
 
-**Phase 5.3 — Richer analysis wiring (next)**
-- [ ] Bar/downbeat → cinematic camera cut candidate
-- [ ] Section change → shape transition + palette swap
-- [ ] Segment pitch vector (12-dim) → color entropy modulation
-- [ ] Segment timbre vector (12-dim) → flow strength / attractor radius
-- [ ] Track valence + energy → auto-palette on track load
+**The Spotify deprecation problem (discovered post-5.2):**
+On Nov 27 2024 Spotify deprecated `/v1/audio-analysis` AND `/v1/audio-features`
+for any app created after the cutoff. Existing apps in extended quota mode
+kept access; new apps lost it entirely. This visualizer's Spotify app is post-
+cutoff, so the entire 5.2 analysis pipeline returns 403. The deprecation
+removed per-beat / per-bar / per-section / per-segment data permanently —
+no third-party service rebuilt that side. **Section/segment-level reactivity
+is unrecoverable for new apps.**
+
+**Phase 5.3 — ReccoBeats features + BPM-driven pulse (active)**
+ReccoBeats (https://reccobeats.com) is a free public API that rebuilt the
+deprecated `/audio-features` half: same field names + ranges (energy,
+valence, tempo, key, danceability, etc.). No per-beat data. Lookup is
+two-step: Spotify ID → ReccoBeats internal UUID → audio-features. Proxied
+through Flask at `/auth/spotify/features/<spotify_id>` to handle CORS.
+- [x] Drop the dead `/audio-analysis` fetch
+- [x] Flask proxy `/auth/spotify/features/<id>` to ReccoBeats
+- [x] `SpotifyWatcher._fetchFeatures()` on track change → `onFeaturesLoad`
+- [x] Mood → palette mapping (valence × energy → toxic/inferno/ember/arctic/synthwave)
+- [x] BPM pulse synth in `tick()`: tempo-driven beat + exponential energy decay
+      between pulses. Cadence matches the song; downbeat alignment is random.
+
+**Phase 5.4 — Essentia.js for real beat alignment (next)**
+ReccoBeats gets us cadence but not phase. To get actual downbeat alignment
+without Spotify's analysis API, we need to do beat detection ourselves on
+audio that's in the browser. Essentia.js (WebAssembly port of the Essentia
+C++ library, ~3MB) has `BeatTrackerMultiFeature` — works in real-time on
+a MediaStream via ScriptProcessorNode/AudioWorkletNode. When the user has
+a paired audio source (tab/mic/file) AND Spotify is connected, we run
+Essentia on the audio for true beat detection while keeping the Spotify
+watcher for "now playing" + auto-palette.
+- [ ] Bundle essentia.js + WASM
+- [ ] AudioWorklet wrapping `BeatTrackerMultiFeature`
+- [ ] Replace existing FFT onset detector when Essentia is available
+- [ ] Phase-lock Spotify BPM pulse to detected beats when both are active
 
 **Phase 5 ops notes:**
 - Spotify dev dashboard: register `${BASE_URL}/auth/spotify/callback` as a
