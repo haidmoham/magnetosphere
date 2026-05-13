@@ -279,7 +279,7 @@ function frame() {
       // Always call beat() to advance the grid and fire onBeat (→ spotify.phaseLock).
       const gridBeat   = beatTracker.beat();
       const now        = performance.now();
-      const minGapMs   = (beatTracker.intervalMs || 500) * 1.25; // 20% less frequent
+      const minGapMs   = (beatTracker.intervalMs || 500) * 2.5;  // fire every ~2.5 beats
       const energyOk   = bands.bass > 0.09;                      // 25% harder to trigger
       const cooldownOk = now - _lastBurstMs >= minGapMs;
       beat = gridBeat && energyOk && cooldownOk;
