@@ -53,6 +53,9 @@ export class SpotifyWatcher {
     this.onError         = null;   // ({type, message})            => void
   }
 
+  /** True while the poll loop is active (regardless of audio mode). */
+  get isRunning() { return this._running; }
+
   async start() {
     if (this._running) return;
     await this._refreshToken();
@@ -131,6 +134,19 @@ export class SpotifyWatcher {
     if (!this._anchorClockMs) return 0;
     if (!this.isPlaying)      return this._anchorPosMs;
     return this._anchorPosMs + (performance.now() - this._anchorClockMs);
+  }
+
+  /**
+   * Phase-lock the BPM pulse grid to an externally detected beat.
+   * Called by BeatTracker.onBeat when a paired audio source (tab/mic/file)
+   * is running alongside the Spotify watcher. Snaps _lastPulseMs to the
+   * current track position so the synthesised pulse grid aligns with real
+   * musical downbeats instead of an arbitrary offset.
+   *
+   * @param {number} posMs  Current track position in ms (from estimatePositionMs)
+   */
+  phaseLock(posMs) {
+    this._lastPulseMs = posMs;
   }
 
   // ── polling ──────────────────────────────────────────────────────

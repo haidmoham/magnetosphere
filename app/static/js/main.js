@@ -1,6 +1,7 @@
 import { AudioEngine } from "./audio.js";
 import { Visualizer } from "./visualizer.js";
 import { SpotifyWatcher } from "./spotify.js";
+import { BeatTracker } from "./beat-tracker.js";
 
 const canvas = document.getElementById("stage");
 const sourcePicker = document.getElementById("source-picker");
@@ -27,6 +28,33 @@ const viz     = new Visualizer(canvas);
 const spotify = new SpotifyWatcher();
 const spotifyBtn = document.querySelector('.src-btn[data-src="spotify"]');
 
+// BeatTracker is instantiated lazily the first time an audio source is activated
+// (the AudioContext must exist first). Once loaded, it replaces the FFT onset
+// detector with Essentia.js RhythmExtractor2013 for real beat phase alignment.
+// Until Essentia is ready (~6-8s on first use), audio.beat() is used as fallback.
+let beatTracker = null;
+
+function ensureBeatTracker() {
+  if (beatTracker || !audio.ctx) return beatTracker;
+  beatTracker = new BeatTracker(audio.ctx);
+  beatTracker.onBeat = () => {
+    // When Essentia detects a beat on a live audio source, phase-lock the
+    // Spotify BPM pulse grid so it aligns with the real musical downbeat.
+    if (spotify.isPlaying) spotify.phaseLock(spotify.estimatePositionMs());
+  };
+  beatTracker.onBpm = (bpm) => {
+    console.info(`[beat-tracker] ${bpm.toFixed(1)} BPM`);
+  };
+  return beatTracker;
+}
+
+/** Connect (or reconnect) BeatTracker to the current audio source node. */
+async function connectBeatTracker() {
+  if (!audio.source || !audio.ctx) return;
+  const bt = ensureBeatTracker();
+  if (bt) await bt.connect(audio.source);
+}
+
 // Photosensitivity warning — shown once per browser session.
 const ewOverlay = document.getElementById("epilepsy-warning");
 const ewProceed = document.getElementById("ew-proceed");
@@ -48,34 +76,52 @@ function showError(msg) {
 }
 
 function refreshUi() {
-  sourceLabel.textContent = audio.mode ? audio.label : "no source";
+  sourceLabel.textContent = buildSourceLabel();
   document.querySelectorAll(".src-btn").forEach((btn) => {
-    const src = btn.dataset.src || (btn.classList.contains("file-btn") ? "file" : "");
-    btn.classList.toggle("active", audio.mode === src);
+    const src = btn.dataset.src;
+    if (src === "spotify") {
+      // Spotify is a background service, not an audio source mode.
+      // "active" = the watcher is currently running.
+      btn.classList.toggle("active", spotify.isRunning);
+    } else {
+      const btnSrc = src || (btn.classList.contains("file-btn") ? "file" : "");
+      btn.classList.toggle("active", audio.mode === btnSrc);
+    }
   });
-  // Volume slider only applies to local file playback. Mic/tab don't have
-  // a controllable output (we don't route them to destination), and Spotify
-  // volume lives in the user's actual Spotify client, not here.
+  // Volume slider only applies to file playback — mic/tab have no output
+  // volume here, and Spotify volume lives in the user's Spotify client.
   const isFile = audio.mode === "file";
   volRow.classList.toggle("ctrl-disabled", !isFile);
   volSlider.disabled = !isFile;
 
-  if (isFile) {
-    playBtn.hidden = false;
-    playBtn.textContent = audio.isPlaying() ? "pause" : "play";
-    stopBtn.hidden = false;
-  } else if (audio.mode === "spotify") {
-    // User controls playback in their own Spotify app — only show stop
-    // (disconnect from the listening session).
-    playBtn.hidden = true;
-    stopBtn.hidden = false;
-  } else if (audio.mode === "mic" || audio.mode === "system") {
-    playBtn.hidden = true;
-    stopBtn.hidden = false;
-  } else {
-    playBtn.hidden = true;
-    stopBtn.hidden = true;
+  // Play/pause only makes sense for file mode; stop shows for any audio source.
+  playBtn.hidden = !isFile;
+  if (isFile) playBtn.textContent = audio.isPlaying() ? "pause" : "play";
+  // Stop disconnects the audio source. Spotify is disconnected via its own button.
+  stopBtn.hidden = !audio.mode;
+}
+
+/** Source label: shows audio source and Spotify link state together. */
+function buildSourceLabel() {
+  const hasAudio = !!audio.mode;
+  if (hasAudio && spotify.isRunning) {
+    const track = spotify.currentTrack;
+    const linked = track ? `♪ ${track.name}` : "♪ spotify linked";
+    return `${audio.label} · ${linked}`;
   }
+  if (hasAudio) return audio.label;
+  if (spotify.isRunning) return formatSpotifyLabel();
+  return "no source";
+}
+
+/** Full Spotify status string for when it's the only active source. */
+function formatSpotifyLabel() {
+  const { currentTrack: track, currentDevice: device, isPlaying } = spotify;
+  if (!track) return "spotify · play something in your spotify app";
+  const artists = (track.artists || []).map(a => a.name).join(", ");
+  const status  = isPlaying ? "" : " (paused)";
+  const where   = device?.name ? ` · ${device.name}` : "";
+  return `spotify · ${track.name}${artists ? " — " + artists : ""}${status}${where}`;
 }
 
 sourcePicker.addEventListener("click", async (e) => {
@@ -84,12 +130,12 @@ sourcePicker.addEventListener("click", async (e) => {
   const src = btn.dataset.src;
   if (src === "system") {
     e.preventDefault();
-    try { await audio.useSystemAudio(); }
+    try { await audio.useSystemAudio(); connectBeatTracker().catch(() => {}); }
     catch (err) { showError(err.message || String(err)); }
     refreshUi();
   } else if (src === "mic") {
     e.preventDefault();
-    try { await audio.useMicrophone(); }
+    try { await audio.useMicrophone(); connectBeatTracker().catch(() => {}); }
     catch (err) { showError(err.message || String(err)); }
     refreshUi();
   } else if (src === "spotify") {
@@ -113,6 +159,12 @@ async function probeSpotify() {
 }
 
 async function handleSpotifyClick() {
+  // Toggle: running → disconnect; not running → connect.
+  if (spotify.isRunning) {
+    spotify.stop();
+    refreshUi();
+    return;
+  }
   const { authenticated, configured } = await probeSpotify();
   if (!configured) {
     showError("Spotify source is not configured on this server.");
@@ -126,47 +178,31 @@ async function handleSpotifyClick() {
   await activateSpotify();
 }
 
-// Format a track for the source label.
-function formatTrackLabel({ track, device, isPlaying }) {
-  if (!track) return "spotify · play something in your spotify app";
-  const artists = (track.artists || []).map(a => a.name).join(", ");
-  const status  = isPlaying ? "" : " (paused)";
-  const where   = device?.name ? ` · ${device.name}` : "";
-  return `spotify · ${track.name}${artists ? " — " + artists : ""}${status}${where}`;
-}
-
 async function activateSpotify() {
+  // Spotify is a background service — it does NOT replace the audio source.
+  // When a live audio source (mic/tab/file) is also active, FFT drives the
+  // visuals and Spotify just supplies auto-palette + phase-lock on beat events.
+  // When no audio source is active, SpotifyWatcher.tick() synthesises bands
+  // from the track's BPM so the cloud still breathes in time.
   try {
-    await audio.useSpotify("spotify · connecting");
-    refreshUi();
-
-    spotify.onTrackChange  = (track, device) => {
-      audio.label = formatTrackLabel({ track, device, isPlaying: spotify.isPlaying });
-      refreshUi();
-    };
-    spotify.onStateChange  = (state) => {
-      audio.label = formatTrackLabel(state);
-      refreshUi();
-    };
+    spotify.onTrackChange  = () => refreshUi();
+    spotify.onStateChange  = () => refreshUi();
     spotify.onFeaturesLoad = (features) => {
-      // Track-level mood → automatic palette swap.
       const palette = paletteForMood(features);
       if (palette) applyPalette(palette);
     };
     spotify.onError = ({ type, message }) => {
-      // Polling errors are common and transient (network blips, token edge
-      // cases) — only surface non-poll errors so we don't spam the toast.
       if (type !== "poll") showError(`Spotify ${type.replace(/_/g, " ")}: ${message}`);
     };
-
     await spotify.start();
+    refreshUi();
   } catch (err) {
     showError(err.message || String(err));
   }
 }
 
-// On load: surface OAuth errors, auto-activate after a successful callback,
-// and reveal the Spotify button only when the server has it configured.
+// On load: surface OAuth errors, auto-activate the Spotify watcher after a
+// successful callback, and reveal the button only when the server is configured.
 (async () => {
   const params = new URLSearchParams(location.search);
   if (params.has("spotify_error")) {
@@ -175,9 +211,10 @@ async function activateSpotify() {
   const status = await probeSpotify();
   if (status.configured) spotifyBtn.hidden = false;
   if (params.has("spotify")) {
-    // Strip the param from the URL bar so reloads don't re-trigger.
     history.replaceState({}, "", location.pathname);
     if (params.get("spotify") === "connected" && status.authenticated) {
+      // Start the watcher in the background — the user can still pick any audio
+      // source; Spotify will layer on top automatically.
       activateSpotify();
     }
   }
@@ -189,6 +226,7 @@ fileInput.addEventListener("change", async () => {
   try {
     await audio.loadFile(file);
     await audio.play();
+    connectBeatTracker().catch(() => {});
   } catch (err) {
     showError(err.message || String(err));
   }
@@ -196,38 +234,39 @@ fileInput.addEventListener("change", async () => {
 });
 
 playBtn.addEventListener("click", async () => {
-  if (audio.mode === "spotify") {
-    await spotify.togglePlay();
-    // onStateChange fires from the SDK and updates spotifyIsPaused + UI.
-    return;
-  }
   if (audio.isPlaying()) audio.pause();
   else await audio.play();
   refreshUi();
 });
 
 stopBtn.addEventListener("click", async () => {
-  if (audio.mode === "spotify") {
-    spotify.stop();
-  } else {
-    audio.pause();
-  }
+  // Disconnect beat tracker before tearing down the source node so the
+  // worklet isn't left connected to a stale (disconnected) AudioNode.
+  beatTracker?.disconnect();
+  audio.pause();
   await audio._teardownCurrent();
+  // Spotify watcher intentionally keeps running — the cloud will switch to
+  // synthetic BPM bands and the palette link stays active.
   refreshUi();
 });
 
 function frame() {
   let bands, beat;
-  if (audio.mode === "spotify") {
-    // Spotify mode: bands + beats come from the audio-analysis scheduler.
-    // Stereo split is unavailable (no per-channel data); the visualizer
-    // just behaves as mono in this mode.
+  if (audio.analyser) {
+    // Live audio source active: rich FFT reactivity + Essentia beat detection.
+    // Spotify watcher (if also running) contributes auto-palette in background
+    // and receives phase-lock via beatTracker.onBeat — but doesn't drive bands.
+    bands = audio.bands(); // also updates audio._beat internally
+    beat  = beatTracker?.isReady ? beatTracker.beat() : audio.beat();
+  } else if (spotify.isPlaying) {
+    // No audio source — Spotify only. Fall back to BPM-synthesised bands so
+    // the cloud still breathes in time with whatever's playing.
     const tick = spotify.tick();
     bands = tick.bands;
     beat  = tick.beat;
   } else {
-    bands = audio.bands();
-    beat  = audio.beat();
+    bands = { bass: 0, mid: 0, treble: 0 };
+    beat  = false;
   }
   const stereo = {
     bandsL:    audio.bandsL(),

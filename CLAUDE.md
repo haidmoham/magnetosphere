@@ -185,19 +185,54 @@ through Flask at `/auth/spotify/features/<spotify_id>` to handle CORS.
 - [x] BPM pulse synth in `tick()`: tempo-driven beat + exponential energy decay
       between pulses. Cadence matches the song; downbeat alignment is random.
 
-**Phase 5.4 — Essentia.js for real beat alignment (next)**
-ReccoBeats gets us cadence but not phase. To get actual downbeat alignment
-without Spotify's analysis API, we need to do beat detection ourselves on
-audio that's in the browser. Essentia.js (WebAssembly port of the Essentia
-C++ library, ~3MB) has `BeatTrackerMultiFeature` — works in real-time on
-a MediaStream via ScriptProcessorNode/AudioWorkletNode. When the user has
-a paired audio source (tab/mic/file) AND Spotify is connected, we run
-Essentia on the audio for true beat detection while keeping the Spotify
-watcher for "now playing" + auto-palette.
-- [ ] Bundle essentia.js + WASM
-- [ ] AudioWorklet wrapping `BeatTrackerMultiFeature`
-- [ ] Replace existing FFT onset detector when Essentia is available
-- [ ] Phase-lock Spotify BPM pulse to detected beats when both are active
+**Phase 5.4 — Essentia.js for real beat alignment (done)**
+ReccoBeats gets us cadence but not phase. Essentia.js (WebAssembly port of
+the Essentia C++ library) gives us `RhythmExtractor2013` — loaded lazily from
+CDN (~2.4MB WASM baked into the ES module, cached after first use). Runs on
+a rolling 6-second PCM buffer posted from an AudioWorklet.
+
+Architecture:
+- `beat-worklet.js`: AudioWorkletProcessor — ring-buffers PCM samples,
+  posts a linearised 6-second Float32Array (transferred, zero-copy) every 2s.
+- `beat-tracker.js`: `BeatTracker` class — loads Essentia lazily, runs
+  `RhythmExtractor2013(signal, 208, 'multifeature', 40)` on each chunk,
+  phase-anchors `_lastBeatMs` to the last detected tick, exposes `beat()`
+  for the render loop and `onBeat` callback for Spotify phase-lock.
+- `main.js`: `connectBeatTracker()` called after each mic/system/file
+  activation; render loop uses `beatTracker.beat()` when `isReady`, falls
+  back to `audio.beat()` (FFT onset) for the first ~6-8s.
+- `spotify.js`: `phaseLock(posMs)` method snaps `_lastPulseMs` to the
+  track position of an externally detected beat.
+
+CDN imports (ES module, dynamic import inside beat-tracker.js):
+  essentia.js-core.es.js — Essentia class (default export)
+  essentia-wasm.es.js    — EssentiaWASM module (WASM inlined as base64)
+
+- [x] Load essentia.js + WASM from CDN (no hosting needed)
+- [x] AudioWorklet (`beat-worklet.js`) wrapping PCM collection
+- [x] `BeatTracker` running `RhythmExtractor2013` with phase anchor
+- [x] Replace FFT onset detector when Essentia is ready
+- [x] `phaseLock()` on SpotifyWatcher for paired-source alignment
+
+**Phase 5.5 — Paired Spotify + audio source mode (done)**
+Spotify is now a background service, not an audio source mode. `audio.mode`
+tracks only real audio (`mic|system|file|null`). Spotify watcher runs
+independently and persists across audio source switches.
+
+Render loop logic:
+- `audio.analyser` present → FFT bands + Essentia beat (Spotify provides
+  auto-palette in background; `beatTracker.onBeat` calls `spotify.phaseLock()`)
+- No analyser, `spotify.isPlaying` → synthetic BPM bands from `spotify.tick()`
+- Neither → zero bands
+
+UX changes:
+- Spotify button = connection toggle (click to link, click again to unlink)
+- Spotify button shows `.active` when watcher is running (can be active
+  alongside another source button simultaneously)
+- Stop button disconnects audio source only; Spotify watcher keeps running
+- Source label: `"tab audio · ♪ Track Name"` when both are active
+- Removed `audio.useSpotify()` — Spotify never owned the audio pipeline
+- Button hint: "background link · auto-palette · pairs with audio"
 
 **Phase 5 ops notes:**
 - Spotify dev dashboard: register `${BASE_URL}/auth/spotify/callback` as a
