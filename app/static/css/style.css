@@ -368,6 +368,7 @@ body::after {
 }
 
 .slider-row label {
+  position: relative;
   cursor: pointer;
   user-select: none;
   -webkit-user-select: none;
@@ -384,6 +385,48 @@ body::after {
   text-shadow: 0 0 6px rgba(0, 240, 255, 0.7);
   transform: translateY(1px);
 }
+
+/* Custom hover tooltip — shows what value the click will reset to. */
+.slider-row label[data-reset-to]::after {
+  content: "↻ reset to " attr(data-reset-to);
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 0;
+  white-space: nowrap;
+  font-family: "Orbitron", monospace;
+  font-weight: 700;
+  font-size: 8px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  padding: 4px 8px;
+  background: rgba(8, 0, 26, 0.96);
+  border: 1px solid rgba(0, 240, 255, 0.45);
+  color: var(--neon-cyan);
+  border-radius: 2px;
+  text-shadow: 0 0 4px rgba(0, 240, 255, 0.55);
+  box-shadow: 0 0 12px rgba(0, 240, 255, 0.25);
+  opacity: 0;
+  transform: translateY(2px);
+  pointer-events: none;
+  transition: opacity 120ms ease, transform 120ms ease;
+  z-index: 16;
+}
+.slider-row label:hover::after {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Disclaimer under the panel header. */
+.tuning-hint {
+  font-family: "Share Tech Mono", monospace;
+  font-size: 9px;
+  font-style: italic;
+  letter-spacing: 0.05em;
+  color: var(--text-dim);
+  opacity: 0.7;
+  padding: 2px 0 4px;
+}
+#tuning-panel.collapsed .tuning-hint { display: none; }
 
 .slider-row input[type=range] {
   appearance: none;

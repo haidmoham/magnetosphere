@@ -125,7 +125,8 @@ document.querySelectorAll("#tuning-panel input[type=range]").forEach((input) => 
   });
 
   // Click the label to reset just that one slider to its HTML default.
-  label.title = "click to reset";
+  // data-reset-to drives the custom hover tooltip in CSS.
+  label.dataset.resetTo = parseFloat(input.defaultValue).toFixed(2);
   label.addEventListener("click", () => {
     const def = parseFloat(input.defaultValue);
     input.value = def;
