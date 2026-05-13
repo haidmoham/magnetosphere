@@ -1350,9 +1350,9 @@ body::after {
    #header-card but pink-accented to signal it's Spotify data.
    ──────────────────────────────────────────────────────────────────── */
 #now-playing {
-  position: absolute;
-  top: 0;
-  right: 0;
+  position: fixed;
+  top: 88px;
+  left: 20px;
   display: flex;
   align-items: center;
   gap: 10px;
