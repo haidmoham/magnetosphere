@@ -258,8 +258,8 @@ body::after {
   transition: width 50ms linear;
 }
 
-/* ─── debug tuning panel ─────────────────────────────────────── */
-#debug-panel {
+/* ─── tuning panel (live shader controls) ────────────────────── */
+#tuning-panel {
   position: fixed;
   top: 20px;
   right: 20px;
@@ -267,7 +267,7 @@ body::after {
   background: rgba(8, 0, 26, 0.82);
   border: 1px solid rgba(165, 102, 255, 0.35);
   border-radius: 4px;
-  padding: 12px 14px;
+  padding: 10px 14px 12px;
   backdrop-filter: blur(6px);
   display: flex;
   flex-direction: column;
@@ -276,7 +276,15 @@ body::after {
   z-index: 15;
 }
 
-.debug-title {
+.tuning-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 6px;
+  border-bottom: 1px solid rgba(165, 102, 255, 0.15);
+}
+
+.tuning-title {
   font-family: "Orbitron", monospace;
   font-weight: 700;
   font-size: 10px;
@@ -284,8 +292,46 @@ body::after {
   text-transform: uppercase;
   color: var(--neon-violet);
   text-shadow: 0 0 6px rgba(165, 102, 255, 0.7);
-  padding-bottom: 4px;
-  border-bottom: 1px solid rgba(165, 102, 255, 0.15);
+}
+
+#tuning-toggle {
+  appearance: none;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--neon-violet);
+  font-size: 12px;
+  line-height: 1;
+  padding: 2px 6px;
+  text-shadow: 0 0 4px rgba(165, 102, 255, 0.6);
+  transition: transform 180ms ease;
+}
+#tuning-toggle:hover { color: var(--neon-cyan); text-shadow: 0 0 6px var(--neon-cyan); }
+
+#tuning-panel.collapsed #tuning-toggle { transform: rotate(-90deg); }
+#tuning-panel.collapsed .tuning-body   { display: none; }
+
+.tuning-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.tuning-section {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.section-label {
+  font-family: "Orbitron", monospace;
+  font-weight: 700;
+  font-size: 8px;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--neon-cyan);
+  opacity: 0.7;
+  text-shadow: 0 0 4px rgba(0, 240, 255, 0.4);
 }
 
 .slider-row {

@@ -99,15 +99,44 @@ function frame() {
   requestAnimationFrame(frame);
 }
 
-// Wire up tuning sliders → visualizer uniforms. Value label updates live.
-document.querySelectorAll("#debug-panel input[type=range]").forEach((input) => {
+// Tuning panel: sliders write directly to shader uniforms, values persist
+// across reloads via localStorage so a good config survives a refresh.
+const TUNING_KEY = "voidpulse.tuning.v1";
+const savedTuning = JSON.parse(localStorage.getItem(TUNING_KEY) || "{}");
+
+document.querySelectorAll("#tuning-panel input[type=range]").forEach((input) => {
   const valEl = input.parentElement.querySelector(".slider-val");
   const uniform = input.dataset.uniform;
+
+  // Restore from localStorage on load
+  if (typeof savedTuning[uniform] === "number") {
+    input.value = savedTuning[uniform];
+    valEl.textContent = savedTuning[uniform].toFixed(2);
+    viz.setTuning(uniform, savedTuning[uniform]);
+  }
+
   input.addEventListener("input", () => {
     const v = parseFloat(input.value);
     valEl.textContent = v.toFixed(2);
     viz.setTuning(uniform, v);
+    savedTuning[uniform] = v;
+    localStorage.setItem(TUNING_KEY, JSON.stringify(savedTuning));
   });
+});
+
+// Collapse / expand the tuning panel.
+const tuningPanel  = document.getElementById("tuning-panel");
+const tuningToggle = document.getElementById("tuning-toggle");
+const TUNING_COLLAPSED_KEY = "voidpulse.tuning.collapsed";
+if (localStorage.getItem(TUNING_COLLAPSED_KEY) === "1") {
+  tuningPanel.classList.add("collapsed");
+}
+tuningToggle.addEventListener("click", () => {
+  tuningPanel.classList.toggle("collapsed");
+  localStorage.setItem(
+    TUNING_COLLAPSED_KEY,
+    tuningPanel.classList.contains("collapsed") ? "1" : "0",
+  );
 });
 
 mobileDismiss.addEventListener("click", () => { mobileNotice.hidden = true; });

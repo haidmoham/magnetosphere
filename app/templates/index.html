@@ -59,37 +59,46 @@
       <div class="meter"><div class="bar"><div id="treble-bar"></div></div></div>
     </div>
 
-    <div id="debug-panel">
-      <div class="debug-title">tuning</div>
-      <div class="slider-row">
-        <label>breathe min</label>
-        <input type="range" data-uniform="uBreatheMin" min="0.2" max="1.2" step="0.01" value="0.85">
-        <span class="slider-val">0.85</span>
+    <div id="tuning-panel">
+      <div class="tuning-header">
+        <span class="tuning-title">tuning</span>
+        <button id="tuning-toggle" aria-label="Collapse tuning panel">▾</button>
       </div>
-      <div class="slider-row">
-        <label>breathe max</label>
-        <input type="range" data-uniform="uBreatheMax" min="0.2" max="2.5" step="0.01" value="1.05">
-        <span class="slider-val">1.05</span>
-      </div>
-      <div class="slider-row">
-        <label>breathe curve</label>
-        <input type="range" data-uniform="uBreatheCurve" min="0.3" max="3.0" step="0.05" value="1.60">
-        <span class="slider-val">1.60</span>
-      </div>
-      <div class="slider-row">
-        <label>size min</label>
-        <input type="range" data-uniform="uSizeMin" min="0.1" max="1.2" step="0.01" value="0.55">
-        <span class="slider-val">0.55</span>
-      </div>
-      <div class="slider-row">
-        <label>size max</label>
-        <input type="range" data-uniform="uSizeMax" min="0.3" max="4.0" step="0.01" value="1.70">
-        <span class="slider-val">1.70</span>
-      </div>
-      <div class="slider-row">
-        <label>size curve</label>
-        <input type="range" data-uniform="uSizeCurve" min="0.3" max="3.0" step="0.05" value="1.50">
-        <span class="slider-val">1.50</span>
+      <div class="tuning-body">
+        <div class="tuning-section">
+          <div class="section-label">shape</div>
+          <div class="slider-row">
+            <label>breathe min</label>
+            <input type="range" data-uniform="uBreatheMin" min="0.2" max="1.2" step="0.01" value="0.20">
+            <span class="slider-val">0.20</span>
+          </div>
+          <div class="slider-row">
+            <label>breathe max</label>
+            <input type="range" data-uniform="uBreatheMax" min="0.2" max="2.5" step="0.01" value="1.70">
+            <span class="slider-val">1.70</span>
+          </div>
+          <div class="slider-row">
+            <label>breathe curve</label>
+            <input type="range" data-uniform="uBreatheCurve" min="0.3" max="3.0" step="0.05" value="2.35">
+            <span class="slider-val">2.35</span>
+          </div>
+          <div class="slider-row">
+            <label>size min</label>
+            <input type="range" data-uniform="uSizeMin" min="0.1" max="1.2" step="0.01" value="0.14">
+            <span class="slider-val">0.14</span>
+          </div>
+          <div class="slider-row">
+            <label>size max</label>
+            <input type="range" data-uniform="uSizeMax" min="0.3" max="4.0" step="0.01" value="1.60">
+            <span class="slider-val">1.60</span>
+          </div>
+          <div class="slider-row">
+            <label>size curve</label>
+            <input type="range" data-uniform="uSizeCurve" min="0.3" max="3.0" step="0.05" value="3.00">
+            <span class="slider-val">3.00</span>
+          </div>
+        </div>
+        <!-- future sections (e.g. "color", "motion") drop in here -->
       </div>
     </div>
 
