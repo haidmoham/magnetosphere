@@ -21,6 +21,18 @@ const helpTooltip = document.getElementById("help-tooltip");
 const audio = new AudioEngine();
 const viz = new Visualizer(canvas);
 
+// Photosensitivity warning — shown once per browser session.
+const ewOverlay = document.getElementById("epilepsy-warning");
+const ewProceed = document.getElementById("ew-proceed");
+if (sessionStorage.getItem("voidpulse.ew.ack")) {
+  ewOverlay.hidden = true;
+} else {
+  ewProceed.addEventListener("click", () => {
+    sessionStorage.setItem("voidpulse.ew.ack", "1");
+    ewOverlay.hidden = true;
+  }, { once: true });
+}
+
 let errorTimer = 0;
 function showError(msg) {
   errorToast.textContent = msg;

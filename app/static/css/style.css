@@ -26,6 +26,88 @@ html, body {
 /* `[hidden]` attribute must beat any explicit `display:` rule (e.g. flex on tooltips). */
 [hidden] { display: none !important; }
 
+/* ─── Photosensitivity warning overlay ──────────────────────────── */
+#epilepsy-warning {
+  position: fixed;
+  inset: 0;
+  background: rgba(4, 0, 14, 0.97);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  padding: 24px;
+}
+
+.ew-box {
+  max-width: 480px;
+  width: 100%;
+  background: rgba(14, 0, 36, 0.96);
+  border: 1px solid rgba(255, 61, 240, 0.55);
+  border-radius: 6px;
+  padding: 32px 36px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  text-align: center;
+  box-shadow: 0 0 40px rgba(255, 61, 240, 0.2), 0 0 80px rgba(255, 61, 240, 0.08);
+}
+
+.ew-icon {
+  font-size: 36px;
+  line-height: 1;
+  color: #ffcc00;
+  text-shadow: 0 0 14px rgba(255, 204, 0, 0.7);
+}
+
+.ew-title {
+  font-family: "Orbitron", monospace;
+  font-weight: 700;
+  font-size: 15px;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--neon-pink);
+  text-shadow: 0 0 10px rgba(255, 61, 240, 0.7);
+  margin: 0;
+}
+
+.ew-body {
+  font-family: "Share Tech Mono", monospace;
+  font-size: 12px;
+  line-height: 1.7;
+  letter-spacing: 0.04em;
+  color: var(--text-soft);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.ew-body strong {
+  color: #fff;
+  text-shadow: 0 0 4px rgba(255, 255, 255, 0.4);
+}
+
+#ew-proceed {
+  cursor: pointer;
+  margin-top: 6px;
+  padding: 10px 28px;
+  background: rgba(255, 61, 240, 0.12);
+  border: 1px solid var(--neon-pink);
+  border-radius: 2px;
+  color: var(--neon-pink);
+  font-family: "Orbitron", monospace;
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  text-shadow: 0 0 6px var(--neon-pink);
+  transition: background 140ms ease, box-shadow 140ms ease;
+}
+#ew-proceed:hover {
+  background: rgba(255, 61, 240, 0.28);
+  box-shadow: 0 0 24px rgba(255, 61, 240, 0.5);
+}
+
 /* Subtle CRT scanlines */
 body::after {
   content: "";

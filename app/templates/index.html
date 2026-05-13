@@ -18,6 +18,18 @@
   </script>
 </head>
 <body>
+  <div id="epilepsy-warning" role="alertdialog" aria-modal="true" aria-labelledby="ew-title" aria-describedby="ew-body">
+    <div class="ew-box">
+      <div class="ew-icon">⚠</div>
+      <h2 class="ew-title" id="ew-title">photosensitivity warning</h2>
+      <div class="ew-body" id="ew-body">
+        <p>This visualizer contains <strong>rapidly flashing lights, strobing effects, and fast-changing colors</strong> that may trigger seizures or other reactions in people with photosensitive epilepsy or similar conditions.</p>
+        <p>If you or anyone who may view this screen has a history of epilepsy, seizures, or photosensitivity — <strong>do not proceed</strong>.</p>
+      </div>
+      <button id="ew-proceed">I understand, proceed</button>
+    </div>
+  </div>
+
   <canvas id="stage"></canvas>
 
   <div id="mobile-notice">
