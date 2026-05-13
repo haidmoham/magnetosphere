@@ -25,11 +25,11 @@ const FLOOR_DEFAULTS = {
 };
 
 // Bloom defaults — UnrealBloomPass.
-// bStrength is pre-transformed: slider raw 0.48 → pow(0.48, 2.2) ≈ 0.20.
+// bStrength is pre-transformed: slider raw 0.395 → pow(0.395, 2.2) ≈ 0.13.
 const BLOOM_DEFAULTS = {
-  bStrength:  0.20,
-  bRadius:    0.25,
-  bThreshold: 0.38,
+  bStrength:  0.13,
+  bRadius:    0.39,
+  bThreshold: 0.71,
 };
 
 const vertexShader = /* glsl */ `
@@ -156,16 +156,16 @@ export class Visualizer {
     this._cFog   = new THREE.Color();
 
     // Cloud animation params (live-editable via setTuning, c* prefix).
-    this.cBurstInterval = 0.5; // minimum seconds between bursts
-    this.cRotateSpeed   = 0.06; // base Y-axis spin rate (rad/s)
+    this.cBurstInterval = 5.0; // minimum seconds between bursts
+    this.cRotateSpeed   = 0.14; // base Y-axis spin rate (rad/s)
     this._lastBurstT    = -Infinity;
 
     // Color entropy params (e* prefix).
-    this.eCycleSpeed = 0.05;   // base hue drift rate (hue units/sec)
-    this.eBassHue    = 0.50;   // bass energy → outer hue shift
+    this.eCycleSpeed = 0.00;   // base hue drift rate (hue units/sec)
+    this.eBassHue    = 0.10;   // bass energy → outer hue shift
     this.eTrebleHue  = 0.10;   // treble energy → inner hue shift
-    this.eSatReact   = 0.30;   // treble → saturation + lightness reactivity
-    this.eBurstHue   = 0.50;   // burst event → instant chromatic flash (inner/outer diverge)
+    this.eSatReact   = 0.25;   // treble → saturation + lightness reactivity
+    this.eBurstHue   = 0.44;   // burst event → instant chromatic flash (inner/outer diverge)
 
     // Floor tuning (live-editable via setTuning).
     Object.assign(this, FLOOR_DEFAULTS);
@@ -377,13 +377,13 @@ export class Visualizer {
         uPixelRatio:   { value: this.renderer.getPixelRatio() },
         uColorInner:   { value: new THREE.Color().setHSL(BASE_INNER_H, 1.0, 0.55) },
         uColorOuter:   { value: new THREE.Color().setHSL(BASE_OUTER_H, 1.0, 0.50) },
-        uBreatheMin:   { value: 0.35 },
-        uBreatheMax:   { value: 2.50 },
-        uBreatheCurve: { value: 2.35 },
-        uSizeMin:      { value: 0.14 },
-        uSizeMax:      { value: 2.15 },
-        uSizeCurve:    { value: 3.00 },
-        uShapeMix:     { value: 1.00 },   // 0 = sphere, 1 = heart
+        uBreatheMin:   { value: 1.16 },
+        uBreatheMax:   { value: 1.71 },
+        uBreatheCurve: { value: 0.35 },
+        uSizeMin:      { value: 0.24 },
+        uSizeMax:      { value: 1.72 },
+        uSizeCurve:    { value: 2.65 },
+        uShapeMix:     { value: 0.29 },   // 0 = sphere, 1 = heart
       },
       vertexShader,
       fragmentShader,

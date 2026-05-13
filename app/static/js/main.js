@@ -113,7 +113,7 @@ function frame() {
 
 // Tuning panel: sliders write directly to shader uniforms, values persist
 // across reloads via localStorage so a good config survives a refresh.
-const TUNING_KEY = "voidpulse.tuning.v5";
+const TUNING_KEY = "voidpulse.tuning.v6";
 const savedTuning = JSON.parse(localStorage.getItem(TUNING_KEY) || "{}");
 
 // If a slider has data-exponent="N", the raw slider value is raised to the
@@ -205,32 +205,33 @@ tuningRandom.addEventListener("click", () => {
 
 // ── Presets ─────────────────────────────────────────────────────────────
 // Each preset is a map of slider data-uniform → raw slider value. Missing
-// entries fall back to the HTML default. So "default" can be empty {}.
+// entries fall back to the HTML default. Starfield matches HTML defaults
+// (so it's empty); heart has explicit values.
 const PRESETS = {
-  default: {},
-  starfield: {
-    uBreatheMin:    1.16,
-    uBreatheMax:    1.71,
-    uBreatheCurve:  0.35,
-    uSizeMin:       0.24,
-    uSizeMax:       1.72,
-    uSizeCurve:     2.65,
-    cBurstInterval: 5.00,
-    cRotateSpeed:   0.14,
-    fMaxH:         12,
-    fScroll:        5.5,
-    fScrollBass:   35,
-    fDecay:         0.67,
-    fHotCurve:      4.2,
-    bStrength:      0.395,   // raw — pow(0.395, 2.2) ≈ 0.13 displayed
-    bRadius:        0.39,
-    bThreshold:     0.71,
-    uShapeMix:      0.29,
-    eCycleSpeed:    0.00,
-    eBassHue:       0.10,
+  starfield: {},
+  heart: {
+    uBreatheMin:    0.35,
+    uBreatheMax:    2.50,
+    uBreatheCurve:  2.35,
+    uSizeMin:       0.14,
+    uSizeMax:       2.15,
+    uSizeCurve:     3.00,
+    cBurstInterval: 0.5,
+    cRotateSpeed:   0.06,
+    fMaxH:         30,
+    fScroll:        5,
+    fScrollBass:   22,
+    fDecay:         0.80,
+    fHotCurve:      2.5,
+    bStrength:      0.48,    // raw — pow(0.48, 2.2) ≈ 0.20 displayed
+    bRadius:        0.25,
+    bThreshold:     0.38,
+    uShapeMix:      1.0,
+    eCycleSpeed:    0.05,
+    eBassHue:       0.50,
     eTrebleHue:     0.10,
-    eSatReact:      0.25,
-    eBurstHue:      0.44,
+    eSatReact:      0.30,
+    eBurstHue:      0.50,
   },
 };
 
