@@ -148,9 +148,10 @@ async function activateSpotify() {
       audio.label = formatTrackLabel(state);
       refreshUi();
     };
-    spotify.onAnalysisLoad = () => {
-      // Beat scheduler now active — no UI signal needed, the cloud reacting
-      // to the music is the signal.
+    spotify.onFeaturesLoad = (features) => {
+      // Track-level mood → automatic palette swap.
+      const palette = paletteForMood(features);
+      if (palette) applyPalette(palette);
     };
     spotify.onError = ({ type, message }) => {
       // Polling errors are common and transient (network blips, token edge
@@ -636,6 +637,34 @@ function applyPalette(name) {
 document.querySelectorAll("#tuning-panel .palette-btn").forEach((btn) => {
   btn.addEventListener("click", () => applyPalette(btn.dataset.palette));
 });
+
+// Map ReccoBeats track-level features → a palette name. The 2D space we
+// care about is (valence × energy): valence ≈ how "positive" the track
+// sounds, energy ≈ intensity. We pick one of the existing palettes by
+// quadrant. Tracks not in ReccoBeats' catalog skip auto-palette entirely.
+//
+//   high val + high energy → toxic     (alive, bright, fast)
+//   low  val + high energy → inferno   (dark, intense)
+//   high val + low  energy → ember     (warm, gentle)
+//   low  val + low  energy → arctic    (cool, still)
+//   anything in the middle → synthwave (default neutral)
+function paletteForMood(features) {
+  if (!features || typeof features.valence !== "number" || typeof features.energy !== "number") {
+    return null;
+  }
+  const v = features.valence;   // 0..1
+  const e = features.energy;    // 0..1
+  // Carve a "middle" band so songs that hover near neutral don't get
+  // a strong palette identity they don't earn.
+  const NEUTRAL = 0.15;         // dead-zone half-width around 0.5
+  const lowV  = v < 0.5 - NEUTRAL,  highV = v > 0.5 + NEUTRAL;
+  const lowE  = e < 0.5 - NEUTRAL,  highE = e > 0.5 + NEUTRAL;
+  if (highV && highE) return "toxic";
+  if (lowV  && highE) return "inferno";
+  if (highV && lowE)  return "ember";
+  if (lowV  && lowE)  return "arctic";
+  return "synthwave";
+}
 
 // Shape selection. The visualizer drives the actual particle morph
 // (smooth sphere↔target transition); this layer manages the active chip
