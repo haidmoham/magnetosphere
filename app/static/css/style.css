@@ -152,9 +152,13 @@ body::after {
   letter-spacing: 0.5em;
   text-transform: uppercase;
   color: var(--neon-cyan);
+  /* Neon glow on top, dark backstop underneath so the logo stays legible
+     against any background (bright particle scatter, white-hot grid peaks). */
   text-shadow:
     0 0 6px var(--neon-cyan),
-    0 0 14px rgba(0, 240, 255, 0.45);
+    0 0 14px rgba(0, 240, 255, 0.45),
+    0 0 3px rgba(0, 0, 0, 0.95),
+    0 1px 6px rgba(0, 0, 0, 0.85);
 }
 
 #title .version {
@@ -337,8 +341,8 @@ body::after {
 /* ─── meters ─────────────────────────────────────────────────── */
 #meters {
   position: fixed;
-  right: 20px;
-  bottom: 20px;
+  left: 20px;
+  top: 78px;       /* below the title + credit line */
   display: flex;
   flex-direction: column;
   gap: 8px;
