@@ -1,4 +1,8 @@
 import * as THREE from "three";
+import { EffectComposer }  from "three/addons/postprocessing/EffectComposer.js";
+import { RenderPass }      from "three/addons/postprocessing/RenderPass.js";
+import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
+import { OutputPass }      from "three/addons/postprocessing/OutputPass.js";
 
 const PARTICLE_COUNT = 60000;
 const COLOR_BG     = 0x08001a;
@@ -18,6 +22,13 @@ const FLOOR_DEFAULTS = {
   fScrollBass: 22,    // extra scroll speed driven by bass
   fDecay:    0.80,    // peak fall rate (lower = faster decay)
   fHotCurve:  2.5,    // white-hot bleach curve (higher = harder to bleach)
+};
+
+// Bloom defaults — UnrealBloomPass.
+const BLOOM_DEFAULTS = {
+  bStrength:  0.80,   // overall bloom intensity
+  bRadius:    0.55,   // softness / spread
+  bThreshold: 0.20,   // luminance floor — pixels below this don't bloom
 };
 
 const vertexShader = /* glsl */ `
@@ -144,9 +155,31 @@ export class Visualizer {
 
     this._buildGrid();
     this._buildParticles();
+    this._buildComposer();
     this.clock = new THREE.Clock();
 
     window.addEventListener("resize", () => this._onResize());
+  }
+
+  // ── Post-processing ─────────────────────────────────────────────────────
+  _buildComposer() {
+    const w = window.innerWidth, h = window.innerHeight;
+    this.composer = new EffectComposer(this.renderer);
+    this.composer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    this.composer.setSize(w, h);
+
+    this.composer.addPass(new RenderPass(this.scene, this.camera));
+
+    this.bloom = new UnrealBloomPass(
+      new THREE.Vector2(w, h),
+      BLOOM_DEFAULTS.bStrength,
+      BLOOM_DEFAULTS.bRadius,
+      BLOOM_DEFAULTS.bThreshold,
+    );
+    this.composer.addPass(this.bloom);
+
+    // sRGB conversion + tonemap.
+    this.composer.addPass(new OutputPass());
   }
 
   // ── Deformable grid ──────────────────────────────────────────────────────
@@ -341,6 +374,8 @@ export class Visualizer {
     this.camera.aspect = w / h;
     this.camera.updateProjectionMatrix();
     this.particles.material.uniforms.uPixelRatio.value = this.renderer.getPixelRatio();
+    if (this.composer) this.composer.setSize(w, h);
+    if (this.bloom)    this.bloom.setSize(w, h);
   }
 
   // ── Render ───────────────────────────────────────────────────────────────
@@ -381,18 +416,23 @@ export class Visualizer {
     this.camera.position.y = 12 + Math.cos(t * 0.06) * 2.5;
     this.camera.lookAt(0, -6, 0);
 
-    this.renderer.render(this.scene, this.camera);
+    this.composer.render();
   }
 
   // Live-tuning hook for the debug panel.
   //   uX → shader uniform on the particle material
   //   fX → instance property used by the floor (grid) update
+  //   bX → property on the UnrealBloomPass
   setTuning(name, value) {
     if (name.startsWith("u")) {
       const u = this.particles.material.uniforms;
       if (u[name]) u[name].value = value;
     } else if (name.startsWith("f")) {
       if (name in this) this[name] = value;
+    } else if (name.startsWith("b") && this.bloom) {
+      const map = { bStrength: "strength", bRadius: "radius", bThreshold: "threshold" };
+      const k = map[name];
+      if (k) this.bloom[k] = value;
     }
   }
 }

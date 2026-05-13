@@ -11,7 +11,8 @@
   <script type="importmap">
     {
       "imports": {
-        "three": "https://unpkg.com/three@0.160.0/build/three.module.js"
+        "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+        "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
       }
     }
   </script>
@@ -127,7 +128,26 @@
             <span class="slider-val">2.50</span>
           </div>
         </div>
-        <!-- future sections (e.g. "color", "motion") drop in here -->
+
+        <div class="tuning-section">
+          <div class="section-label">bloom</div>
+          <div class="slider-row">
+            <label>strength</label>
+            <input type="range" data-uniform="bStrength" min="0" max="3.0" step="0.05" value="0.80">
+            <span class="slider-val">0.80</span>
+          </div>
+          <div class="slider-row">
+            <label>radius</label>
+            <input type="range" data-uniform="bRadius" min="0" max="1.5" step="0.05" value="0.55">
+            <span class="slider-val">0.55</span>
+          </div>
+          <div class="slider-row">
+            <label>threshold</label>
+            <input type="range" data-uniform="bThreshold" min="0" max="1.0" step="0.01" value="0.20">
+            <span class="slider-val">0.20</span>
+          </div>
+        </div>
+        <!-- future sections (e.g. "color") drop in here -->
       </div>
     </div>
 
