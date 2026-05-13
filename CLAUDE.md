@@ -214,10 +214,25 @@ CDN imports (ES module, dynamic import inside beat-tracker.js):
 - [x] Replace FFT onset detector when Essentia is ready
 - [x] `phaseLock()` on SpotifyWatcher for paired-source alignment
 
-Note: paired mode (Spotify watcher + live audio source simultaneously) is
-architecturally possible but requires a UX toggle — currently the two source
-types are mutually exclusive in the picker. Phase 5.5 could expose a
-"Spotify + audio" dual-source mode.
+**Phase 5.5 — Paired Spotify + audio source mode (done)**
+Spotify is now a background service, not an audio source mode. `audio.mode`
+tracks only real audio (`mic|system|file|null`). Spotify watcher runs
+independently and persists across audio source switches.
+
+Render loop logic:
+- `audio.analyser` present → FFT bands + Essentia beat (Spotify provides
+  auto-palette in background; `beatTracker.onBeat` calls `spotify.phaseLock()`)
+- No analyser, `spotify.isPlaying` → synthetic BPM bands from `spotify.tick()`
+- Neither → zero bands
+
+UX changes:
+- Spotify button = connection toggle (click to link, click again to unlink)
+- Spotify button shows `.active` when watcher is running (can be active
+  alongside another source button simultaneously)
+- Stop button disconnects audio source only; Spotify watcher keeps running
+- Source label: `"tab audio · ♪ Track Name"` when both are active
+- Removed `audio.useSpotify()` — Spotify never owned the audio pipeline
+- Button hint: "background link · auto-palette · pairs with audio"
 
 **Phase 5 ops notes:**
 - Spotify dev dashboard: register `${BASE_URL}/auth/spotify/callback` as a

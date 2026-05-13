@@ -1,10 +1,10 @@
-// Web Audio engine. Supports four sources:
-//   - microphone           (getUserMedia, music-friendly constraints)
-//   - system / tab audio   (getDisplayMedia, Chrome/Edge only)
-//   - file upload          (fallback)
-//   - spotify              (Web Playback SDK; FFT bypassed — beat-sync drives
-//                           visualizer events from the Spotify Audio Analysis
-//                           API rather than real-time band energy)
+// Web Audio engine. Supports three audio sources:
+//   - microphone      (getUserMedia, music-friendly constraints)
+//   - system / tab    (getDisplayMedia, Chrome/Edge only)
+//   - file upload     (fallback, routes to ctx.destination)
+//
+// Spotify is NOT an audio source — it runs as a background metadata watcher
+// in main.js alongside any of the above. See SpotifyWatcher in spotify.js.
 //
 // For live sources we deliberately do NOT connect to ctx.destination —
 // mic would feed back, tab audio would double-play.
@@ -38,7 +38,7 @@ export class AudioEngine {
     this.analyserL = null;
     this.analyserR = null;
     this.source = null;
-    this.mode = null; // "mic" | "system" | "file" | "spotify" | null
+    this.mode = null; // "mic" | "system" | "file" | null
     this.audio = null;
     this.stream = null;
     this.freqData  = null;
@@ -180,22 +180,6 @@ export class AudioEngine {
     this.label = audioTracks[0].label || "tab audio";
   }
 
-  /**
-   * Spotify mode. The visualizer is driven by Audio Analysis events scheduled
-   * elsewhere (see SpotifyEngine + the Phase 5.2 scheduler), so we don't wire
-   * up any AnalyserNodes here — bands() returns zero in this mode.
-   *
-   * The Spotify SDK manages playback in its own audio context that's not
-   * exposed to us, which is fine: we get richer data (exact beat timestamps)
-   * from the Analysis API than FFT would give us anyway.
-   */
-  async useSpotify(label = "spotify") {
-    this._ensureContext();
-    await this._teardownCurrent();
-    this.mode  = "spotify";
-    this.label = label;
-  }
-
   async loadFile(file) {
     this._ensureContext();
     await this._teardownCurrent();
@@ -238,8 +222,7 @@ export class AudioEngine {
 
   isPlaying() {
     if (this.mode === "file") return !!this.audio && !this.audio.paused && !this.audio.ended;
-    // Spotify playback state is owned by the SDK; main.js queries it directly.
-    return this.mode === "mic" || this.mode === "system" || this.mode === "spotify";
+    return this.mode === "mic" || this.mode === "system";
   }
 
   // Raw frequency arrays — call after bands*() so the buffers are fresh.

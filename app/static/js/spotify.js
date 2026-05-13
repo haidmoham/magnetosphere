@@ -53,6 +53,9 @@ export class SpotifyWatcher {
     this.onError         = null;   // ({type, message})            => void
   }
 
+  /** True while the poll loop is active (regardless of audio mode). */
+  get isRunning() { return this._running; }
+
   async start() {
     if (this._running) return;
     await this._refreshToken();
