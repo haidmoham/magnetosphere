@@ -166,6 +166,29 @@ body::after {
   text-shadow: 0 0 6px var(--neon-pink);
 }
 
+#credit {
+  margin-top: 6px;
+  font-family: "Share Tech Mono", monospace;
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  opacity: 0.55;
+  transition: opacity 200ms ease;
+}
+#credit:hover { opacity: 1; }
+#credit .credit-sep { opacity: 0.5; margin: 0 4px; }
+#credit a {
+  color: var(--neon-cyan);
+  text-decoration: none;
+  text-shadow: 0 0 4px rgba(0, 240, 255, 0.4);
+  transition: color 140ms ease, text-shadow 140ms ease;
+}
+#credit a:hover {
+  color: var(--neon-pink);
+  text-shadow: 0 0 6px rgba(255, 61, 240, 0.6);
+}
+
 /* ─── source picker ──────────────────────────────────────────── */
 #source-picker {
   position: fixed;
