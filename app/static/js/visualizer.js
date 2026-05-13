@@ -11,7 +11,7 @@ const GRID_ROWS      = 32;   // depth slices front→back
 const GRID_WIDTH     = 900;
 const GRID_DEPTH     = 380;
 const GRID_Z_CENTER  = -80;  // world-Z of grid midpoint
-const GRID_MAX_H     = 12;   // max vertex lift (units)
+const GRID_MAX_H     = 18;   // max vertex lift (units)
 
 const vertexShader = /* glsl */ `
   uniform float uTime;
@@ -326,7 +326,7 @@ export class Visualizer {
 
     // Beat burst: fast radial punch, echo 200ms later, scatter: reform ~1.5s
     // Cooldown: don't re-trigger while still reforming from last beat
-    if (beat && u.uScatter.value < 0.15) {
+    if (beat && u.uScatter.value < 0.08) {
       u.uBurst.value   = 1.0;
       u.uScatter.value = 1.0;
       clearTimeout(this._echoTimer);
