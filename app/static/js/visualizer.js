@@ -52,7 +52,10 @@ const vertexShader = /* glsl */ `
       pos.x * s + pos.z * c
     );
 
-    float breathe = 1.0 + uBass * 0.82;
+    // Non-linear breathe: fast initial swell, levels off at peaks.
+    // Range: [0.78, 2.48] vs old linear [1.0, 1.82].
+    float bassCurved = pow(uBass, 0.65);
+    float breathe = 0.78 + bassCurved * 1.70;
     pos *= breathe;
     pos.y += aSeed.y * uMid   * 6.5;
     pos   += aSeed   * uTreble * 1.8;
@@ -70,7 +73,9 @@ const vertexShader = /* glsl */ `
     vec4 mv = modelViewMatrix * vec4(pos, 1.0);
     gl_Position = projectionMatrix * mv;
 
-    float size = aSize * (1.0 + uBass * 0.65 + uBurst * 0.8 + uScatter * 0.4);
+    // Non-linear size: wider range [0.4, ~3.5×] vs old [1.0, 1.65×].
+    float sizeCurved = pow(clamp(uBass * 1.15, 0.0, 1.0), 0.72);
+    float size = aSize * (0.40 + sizeCurved * 2.80 + uBurst * 0.9 + uScatter * 0.5);
     gl_PointSize = size * uPixelRatio * (220.0 / -mv.z);
   }
 `;
