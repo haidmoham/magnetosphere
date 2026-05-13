@@ -263,11 +263,11 @@ body::after {
   position: fixed;
   top: 20px;
   right: 20px;
-  width: 280px;
+  width: 300px;
   background: rgba(8, 0, 26, 0.82);
   border: 1px solid rgba(165, 102, 255, 0.35);
   border-radius: 4px;
-  padding: 10px 14px 12px;
+  padding: 10px 18px 12px 14px;
   backdrop-filter: blur(6px);
   display: flex;
   flex-direction: column;
@@ -336,9 +336,9 @@ body::after {
 
 .slider-row {
   display: grid;
-  grid-template-columns: 90px 1fr 42px;
+  grid-template-columns: 88px 1fr 44px;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   font-family: "Share Tech Mono", monospace;
   font-size: 10px;
   color: var(--text-dim);
