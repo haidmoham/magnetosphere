@@ -338,34 +338,6 @@ body::after {
 }
 #stop-btn:hover { background: rgba(255, 60, 100, 0.3); }
 
-/* ─── meters ─────────────────────────────────────────────────── */
-#meters {
-  position: fixed;
-  left: 20px;
-  top: 78px;       /* below the title + credit line */
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.meter { display: flex; }
-
-.meter .bar {
-  width: 200px;
-  height: 8px;
-  background: rgba(255, 61, 240, 0.08);
-  border: 1px solid rgba(255, 61, 240, 0.18);
-  border-radius: 1px;
-  overflow: hidden;
-}
-
-.meter .bar > div {
-  height: 100%;
-  width: 0%;
-  background: linear-gradient(90deg, var(--neon-cyan), var(--neon-pink));
-  box-shadow: 0 0 10px var(--neon-pink);
-  transition: width 50ms linear;
-}
 
 /* ─── tuning panel (live shader controls) ────────────────────── */
 #tuning-panel {
