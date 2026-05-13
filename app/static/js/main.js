@@ -253,14 +253,15 @@ tuningDetails.addEventListener("click", () => {
 // it with a random palette swap so each cut feels like a scene change.
 const tuningCinema    = document.getElementById("tuning-cinema");
 const CINEMA_KEY      = "voidpulse.cinema";
-const paletteNames    = Object.keys(PALETTES);
 let   lastCinemaPalette = null;
 
 viz.onSceneTick = () => {
+  // PALETTES is defined below; evaluate lazily at call time (not at module parse).
+  const names = Object.keys(PALETTES);
   // Pick a different palette than the last cut so consecutive scenes feel distinct.
   let name;
-  do { name = paletteNames[Math.floor(Math.random() * paletteNames.length)]; }
-  while (name === lastCinemaPalette && paletteNames.length > 1);
+  do { name = names[Math.floor(Math.random() * names.length)]; }
+  while (name === lastCinemaPalette && names.length > 1);
   lastCinemaPalette = name;
   applyPalette(name);
 };
