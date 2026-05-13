@@ -127,6 +127,7 @@ document.querySelectorAll("#tuning-panel input[type=range]").forEach((input) => 
 // Collapse / expand the tuning panel.
 const tuningPanel  = document.getElementById("tuning-panel");
 const tuningToggle = document.getElementById("tuning-toggle");
+const tuningReset  = document.getElementById("tuning-reset");
 const TUNING_COLLAPSED_KEY = "voidpulse.tuning.collapsed";
 if (localStorage.getItem(TUNING_COLLAPSED_KEY) === "1") {
   tuningPanel.classList.add("collapsed");
@@ -137,6 +138,19 @@ tuningToggle.addEventListener("click", () => {
     TUNING_COLLAPSED_KEY,
     tuningPanel.classList.contains("collapsed") ? "1" : "0",
   );
+});
+
+// Reset all sliders to their HTML default values and clear persisted state.
+tuningReset.addEventListener("click", () => {
+  document.querySelectorAll("#tuning-panel input[type=range]").forEach((input) => {
+    const def = parseFloat(input.defaultValue);
+    input.value = def;
+    const valEl = input.parentElement.querySelector(".slider-val");
+    valEl.textContent = def.toFixed(2);
+    viz.setTuning(input.dataset.uniform, def);
+    delete savedTuning[input.dataset.uniform];
+  });
+  localStorage.removeItem(TUNING_KEY);
 });
 
 mobileDismiss.addEventListener("click", () => { mobileNotice.hidden = true; });

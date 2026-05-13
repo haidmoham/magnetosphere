@@ -294,19 +294,41 @@ body::after {
   text-shadow: 0 0 6px rgba(165, 102, 255, 0.7);
 }
 
-#tuning-toggle {
+.tuning-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+#tuning-reset, #tuning-toggle {
   appearance: none;
   background: transparent;
   border: none;
   cursor: pointer;
   color: var(--neon-violet);
-  font-size: 12px;
+  font-family: "Orbitron", monospace;
+  font-weight: 700;
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
   line-height: 1;
-  padding: 2px 6px;
+  padding: 3px 6px;
   text-shadow: 0 0 4px rgba(165, 102, 255, 0.6);
-  transition: transform 180ms ease;
+  border-radius: 2px;
+  transition: color 140ms ease, text-shadow 140ms ease, background 140ms ease;
 }
-#tuning-toggle:hover { color: var(--neon-cyan); text-shadow: 0 0 6px var(--neon-cyan); }
+
+#tuning-toggle {
+  font-size: 12px;
+  letter-spacing: 0;
+  transition: transform 180ms ease, color 140ms ease, text-shadow 140ms ease;
+}
+
+#tuning-reset:hover, #tuning-toggle:hover {
+  color: var(--neon-cyan);
+  text-shadow: 0 0 6px var(--neon-cyan);
+}
+#tuning-reset:active { background: rgba(0, 240, 255, 0.1); }
 
 #tuning-panel.collapsed #tuning-toggle { transform: rotate(-90deg); }
 #tuning-panel.collapsed .tuning-body   { display: none; }
