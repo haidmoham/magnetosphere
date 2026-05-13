@@ -99,6 +99,17 @@ function frame() {
   requestAnimationFrame(frame);
 }
 
+// Wire up tuning sliders → visualizer uniforms. Value label updates live.
+document.querySelectorAll("#debug-panel input[type=range]").forEach((input) => {
+  const valEl = input.parentElement.querySelector(".slider-val");
+  const uniform = input.dataset.uniform;
+  input.addEventListener("input", () => {
+    const v = parseFloat(input.value);
+    valEl.textContent = v.toFixed(2);
+    viz.setTuning(uniform, v);
+  });
+});
+
 mobileDismiss.addEventListener("click", () => { mobileNotice.hidden = true; });
 
 helpBtn.addEventListener("click", (e) => {

@@ -22,6 +22,12 @@ const vertexShader = /* glsl */ `
   uniform float uEcho;
   uniform float uScatter;
   uniform float uPixelRatio;
+  uniform float uBreatheMin;
+  uniform float uBreatheMax;
+  uniform float uBreatheCurve;
+  uniform float uSizeMin;
+  uniform float uSizeMax;
+  uniform float uSizeCurve;
   attribute float aSize;
   attribute vec3 aSeed;
   varying float vRadial;
@@ -52,10 +58,9 @@ const vertexShader = /* glsl */ `
       pos.x * s + pos.z * c
     );
 
-    // Non-linear breathe: fast initial swell, levels off at peaks.
-    // Range: [0.78, 2.48] vs old linear [1.0, 1.82].
-    float bassCurved = pow(uBass, 0.65);
-    float breathe = 0.78 + bassCurved * 1.70;
+    // Non-linear breathe — uBreatheCurve > 1 means rare peaks (concentrates low bass near min)
+    float bassCurved = pow(uBass, uBreatheCurve);
+    float breathe = uBreatheMin + bassCurved * uBreatheMax;
     pos *= breathe;
     pos.y += aSeed.y * uMid   * 6.5;
     pos   += aSeed   * uTreble * 1.8;
@@ -73,9 +78,9 @@ const vertexShader = /* glsl */ `
     vec4 mv = modelViewMatrix * vec4(pos, 1.0);
     gl_Position = projectionMatrix * mv;
 
-    // Non-linear size: wider range [0.4, ~3.5×] vs old [1.0, 1.65×].
-    float sizeCurved = pow(clamp(uBass * 1.15, 0.0, 1.0), 0.72);
-    float size = aSize * (0.40 + sizeCurved * 2.80 + uBurst * 0.9 + uScatter * 0.5);
+    // Non-linear size — same curve story as breathe.
+    float sizeCurved = pow(clamp(uBass, 0.0, 1.0), uSizeCurve);
+    float size = aSize * (uSizeMin + sizeCurved * uSizeMax + uBurst * 0.9 + uScatter * 0.5);
     gl_PointSize = size * uPixelRatio * (220.0 / -mv.z);
   }
 `;
@@ -264,16 +269,22 @@ export class Visualizer {
 
     const mat = new THREE.ShaderMaterial({
       uniforms: {
-        uTime:       { value: 0 },
-        uBass:       { value: 0 },
-        uMid:        { value: 0 },
-        uTreble:     { value: 0 },
-        uBurst:      { value: 0 },
-        uEcho:       { value: 0 },
-        uScatter:    { value: 0 },
-        uPixelRatio: { value: this.renderer.getPixelRatio() },
-        uColorInner: { value: new THREE.Color().setHSL(BASE_INNER_H, 1.0, 0.55) },
-        uColorOuter: { value: new THREE.Color().setHSL(BASE_OUTER_H, 1.0, 0.50) },
+        uTime:         { value: 0 },
+        uBass:         { value: 0 },
+        uMid:          { value: 0 },
+        uTreble:       { value: 0 },
+        uBurst:        { value: 0 },
+        uEcho:         { value: 0 },
+        uScatter:      { value: 0 },
+        uPixelRatio:   { value: this.renderer.getPixelRatio() },
+        uColorInner:   { value: new THREE.Color().setHSL(BASE_INNER_H, 1.0, 0.55) },
+        uColorOuter:   { value: new THREE.Color().setHSL(BASE_OUTER_H, 1.0, 0.50) },
+        uBreatheMin:   { value: 0.85 },
+        uBreatheMax:   { value: 1.05 },
+        uBreatheCurve: { value: 1.60 },
+        uSizeMin:      { value: 0.55 },
+        uSizeMax:      { value: 1.70 },
+        uSizeCurve:    { value: 1.50 },
       },
       vertexShader,
       fragmentShader,
@@ -356,5 +367,11 @@ export class Visualizer {
     this.camera.lookAt(0, -6, 0);
 
     this.renderer.render(this.scene, this.camera);
+  }
+
+  // Live-tuning hook for the debug panel.
+  setTuning(name, value) {
+    const u = this.particles.material.uniforms;
+    if (u[name]) u[name].value = value;
   }
 }
