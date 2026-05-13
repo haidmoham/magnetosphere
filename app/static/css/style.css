@@ -1336,10 +1336,11 @@ body::after {
 }
 
 /* Track card list */
+/* Search results — full-width rows */
 .md-tracks {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
   width: 100%;
 }
 
@@ -1347,9 +1348,9 @@ body::after {
 .md-track {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 12px;
   width: 100%;
-  padding: 12px 14px;
+  padding: 10px 12px;
   background: rgba(10, 0, 30, 0.65);
   border: 1px solid rgba(0, 240, 255, 0.14);
   border-radius: 6px;
@@ -1360,18 +1361,19 @@ body::after {
   transition: border-color 180ms ease, background 180ms ease, box-shadow 180ms ease;
   appearance: none;
   -webkit-appearance: none;
+  box-sizing: border-box;
 }
 .md-track:active,
 .md-track.md-playing {
   border-color: rgba(0, 240, 255, 0.55);
   background: rgba(0, 240, 255, 0.08);
-  box-shadow: 0 0 20px rgba(0, 240, 255, 0.18);
+  box-shadow: 0 0 16px rgba(0, 240, 255, 0.15);
 }
 
 .md-art {
-  width: 52px;
-  height: 52px;
-  border-radius: 4px;
+  width: 44px;
+  height: 44px;
+  border-radius: 3px;
   object-fit: cover;
   flex-shrink: 0;
   background: rgba(0, 240, 255, 0.06);
@@ -1383,8 +1385,8 @@ body::after {
 .md-track-title {
   font-family: "Orbitron", monospace;
   font-weight: 700;
-  font-size: 11px;
-  letter-spacing: 0.12em;
+  font-size: 10px;
+  letter-spacing: 0.10em;
   color: rgba(246, 214, 255, 0.9);
   white-space: nowrap;
   overflow: hidden;
@@ -1392,24 +1394,58 @@ body::after {
 }
 .md-track-artist {
   font-family: "Share Tech Mono", monospace;
-  font-size: 10px;
-  letter-spacing: 0.06em;
+  font-size: 9px;
+  letter-spacing: 0.05em;
   color: rgba(0, 240, 255, 0.5);
-  margin-top: 3px;
+  margin-top: 2px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 .md-play-icon {
-  font-size: 16px;
-  color: rgba(0, 240, 255, 0.55);
+  font-size: 13px;
+  color: rgba(0, 240, 255, 0.4);
   flex-shrink: 0;
   transition: color 180ms ease, text-shadow 180ms ease;
 }
 .md-track.md-playing .md-play-icon {
   color: var(--neon-cyan);
-  text-shadow: 0 0 10px rgba(0, 240, 255, 0.8);
+  text-shadow: 0 0 8px rgba(0, 240, 255, 0.8);
 }
+
+/* ── Suggestions shelf — horizontal thirds ─────────────────────
+   Override the column card layout for the curated picks row.
+   Art fills the top of each card; title + artist sit below.    */
+#md-suggestions .md-tracks {
+  flex-direction: row;
+  gap: 8px;
+}
+#md-suggestions .md-track {
+  flex: 1;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0;
+  padding: 0;
+  overflow: hidden;
+}
+#md-suggestions .md-art {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1;
+  border-radius: 4px 4px 0 0;
+}
+#md-suggestions .md-info {
+  padding: 6px 8px 7px;
+}
+#md-suggestions .md-track-title {
+  font-size: 9px;
+  letter-spacing: 0.08em;
+}
+#md-suggestions .md-track-artist {
+  font-size: 8px;
+  margin-top: 2px;
+}
+#md-suggestions .md-play-icon { display: none; }
 
 /* Loading dots */
 .md-loading {
