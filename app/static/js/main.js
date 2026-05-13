@@ -31,8 +31,21 @@ const cursorEl   = document.getElementById("cursor");
 const cursorRing = document.getElementById("cursor-ring");
 let _cursorBeatTimer = 0;
 
+// XP-style cursor trail — ring buffer of recent mouse positions.
+const TRAIL_COUNT = 10;
+const _trailPos = Array.from({ length: TRAIL_COUNT }, () => ({ x: -200, y: -200 }));
+const _trailEls = Array.from({ length: TRAIL_COUNT }, () => {
+  const el = document.createElement("div");
+  el.className = "cursor-trail";
+  document.body.appendChild(el);
+  return el;
+});
+
 document.addEventListener("mousemove", (e) => {
   cursorEl.style.transform = `translate(${e.clientX}px, ${e.clientY}px)`;
+  // Shift position history: newest at front, oldest at back.
+  _trailPos.unshift({ x: e.clientX, y: e.clientY });
+  _trailPos.length = TRAIL_COUNT;
 });
 document.addEventListener("mouseleave", () => { cursorEl.style.opacity = "0"; });
 document.addEventListener("mouseenter", () => { cursorEl.style.opacity = "1"; });
@@ -394,6 +407,13 @@ function frame() {
   viz.render(bands, audio.rawFreq(), beat, stereo);
   if (beat) pulseCursor();
   drawFavicon(beat);
+  // Update XP trail: each ghost fades + shrinks toward the back.
+  _trailEls.forEach((el, i) => {
+    const t = 1 - (i + 1) / (TRAIL_COUNT + 1);
+    const { x, y } = _trailPos[i] ?? { x: -200, y: -200 };
+    el.style.transform = `translate(${x}px, ${y}px) translate(-50%, -50%) scale(${0.3 + t * 0.7})`;
+    el.style.opacity = String(t * 0.5);
+  });
   requestAnimationFrame(frame);
 }
 
