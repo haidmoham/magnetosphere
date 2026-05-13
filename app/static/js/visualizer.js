@@ -170,10 +170,11 @@ export class Visualizer {
     this.camera.position.set(0, 12, 135);
     this.camera.lookAt(0, -6, 0);
 
-    // Zoom toggle — _zoomTarget is the desired Z, _zoomCurrent lerps toward it
-    // each frame for a smooth ~0.5s ease in/out.
-    this._zoomOut     = 135;
-    this._zoomIn      = 80;
+    // Zoom — _zoomTarget is the desired camera Z, _zoomCurrent lerps toward
+    // it each frame for a smooth ~0.5s ease. Bounds are clamps used by setZoom.
+    this._zoomMin     = 50;
+    this._zoomMax     = 250;
+    this._zoomDefault = 135;
     this._zoomCurrent = 135;
     this._zoomTarget  = 135;
 
@@ -545,11 +546,15 @@ export class Visualizer {
     this.composer.render();
   }
 
-  // Zoom toggle — pass true/1 to zoom in, false/0 to zoom out. The render
-  // loop lerps _zoomCurrent toward _zoomTarget so the transition is smooth.
-  setZoom(zoomedIn) {
-    this._zoomTarget = zoomedIn ? this._zoomIn : this._zoomOut;
+  // Zoom — set the target camera Z (any number, clamped to [zoomMin, zoomMax]).
+  // The render loop lerps _zoomCurrent toward _zoomTarget for smooth transitions.
+  setZoom(z) {
+    this._zoomTarget = Math.max(this._zoomMin, Math.min(this._zoomMax, z));
   }
+  get zoomMin()     { return this._zoomMin; }
+  get zoomMax()     { return this._zoomMax; }
+  get zoomDefault() { return this._zoomDefault; }
+  get zoomTarget()  { return this._zoomTarget; }
 
   // Live-tuning hook for the debug panel.
   //   uX → shader uniform on the particle material
