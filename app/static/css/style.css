@@ -203,6 +203,14 @@ body::after {
   text-shadow: 0 0 6px rgba(255, 61, 240, 0.6);
 }
 
+#build-stamp {
+  font-family: "Share Tech Mono", monospace;
+  font-size: 8px;
+  letter-spacing: 0.12em;
+  color: rgba(0, 240, 255, 0.25);
+  margin-top: 3px;
+}
+
 /* ─── source picker ──────────────────────────────────────────── */
 #source-picker {
   position: fixed;
