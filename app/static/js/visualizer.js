@@ -166,8 +166,9 @@ const vertexShader = /* glsl */ `
     if (uCursorStrength > 0.0) {
       vec3 toCursor = uCursorPos - pos;
       float d = length(toCursor);
-      float force = uCursorStrength * 20.0 / (d * 0.04 + 1.0);
+      float force = uCursorStrength * 80.0 / (d * 0.02 + 1.0);
       force *= smoothstep(uCursorRadius, 0.0, d);  // full pull at centre, zero at edge
+      force = min(force, d * 0.88);                // don't overshoot cursor
       pos += (toCursor / max(d, 0.5)) * force;
     }
 
@@ -680,7 +681,7 @@ export class Visualizer {
         uAttrStr:   { value: 7.5 },
         uCursorPos:      { value: new THREE.Vector3(0, 0, 0) },
         uCursorStrength: { value: 0 },
-        uCursorRadius:   { value: 45.0 },
+        uCursorRadius:   { value: 60.0 },
       },
       vertexShader,
       fragmentShader,
