@@ -162,13 +162,13 @@ const vertexShader = /* glsl */ `
     if (uAttrCount > 2.5) pos += attrPull(uAttrPos2, pos);
     if (uAttrCount > 3.5) pos += attrPull(uAttrPos3, pos);
 
-    // Cursor disruption — repels particles away from the cursor world position
+    // Cursor gravity well — attracts particles toward the cursor world position
     if (uCursorStrength > 0.0) {
-      vec3 toCursor = pos - uCursorPos;
-      float d = max(length(toCursor), 0.5);
-      float force = uCursorStrength * 38.0 / (d * 0.045 + 1.0);
-      force *= smoothstep(uCursorRadius, 4.0, d);
-      pos += normalize(toCursor) * force;
+      vec3 toCursor = uCursorPos - pos;
+      float d = length(toCursor);
+      float force = uCursorStrength * 20.0 / (d * 0.04 + 1.0);
+      force *= smoothstep(uCursorRadius, 0.0, d);  // full pull at centre, zero at edge
+      pos += (toCursor / max(d, 0.5)) * force;
     }
 
     // Scatter — each particle flies to its own random chaos position, then reforms
@@ -677,7 +677,7 @@ export class Visualizer {
         uAttrStr:   { value: 7.5 },
         uCursorPos:      { value: new THREE.Vector3(0, 0, 0) },
         uCursorStrength: { value: 0 },
-        uCursorRadius:   { value: 72.0 },
+        uCursorRadius:   { value: 45.0 },
       },
       vertexShader,
       fragmentShader,
