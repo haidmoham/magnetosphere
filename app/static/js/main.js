@@ -44,11 +44,6 @@ const cursorEl   = document.getElementById("cursor");
 const cursorRing = document.getElementById("cursor-ring");
 let _cursorBeatTimer = 0;
 
-// ── cursor disruption ─────────────────────────────────────────
-const cursorDisruptBtn    = document.getElementById("cursor-disrupt-btn");
-const disruptRadiusSlider = document.getElementById("disrupt-radius-slider");
-const disruptRadiusVal    = document.getElementById("disrupt-radius-val");
-let _cursorDisruptActive = false;
 
 // XP-style cursor trail — ring buffer of recent mouse positions.
 const TRAIL_COUNT = 10;
@@ -65,11 +60,6 @@ document.addEventListener("mousemove", (e) => {
   // Shift position history: newest at front, oldest at back.
   _trailPos.unshift({ x: e.clientX, y: e.clientY });
   _trailPos.length = TRAIL_COUNT;
-  // Feed world-space cursor position to the disruption shader when active.
-  if (_cursorDisruptActive) {
-    const world = viz.screenToWorld(e.clientX, e.clientY);
-    viz.setCursorDisrupt(world, true);
-  }
 });
 document.addEventListener("mouseleave", () => { cursorEl.style.opacity = "0"; });
 document.addEventListener("mouseenter", () => { cursorEl.style.opacity = "1"; });
@@ -1238,20 +1228,6 @@ function applyUiHidden(on) {
 applyUiHidden(localStorage.getItem(UI_HIDE_KEY) === "1");
 uiHideBtn.addEventListener("click", () => applyUiHidden(!document.body.classList.contains("ui-hidden")));
 
-// Cursor disruption toggle — enables particle repulsion from the cursor position.
-cursorDisruptBtn.addEventListener("click", () => {
-  _cursorDisruptActive = !_cursorDisruptActive;
-  cursorDisruptBtn.classList.toggle("active", _cursorDisruptActive);
-  if (!_cursorDisruptActive) viz.setCursorDisrupt(null, false);
-});
-
-// Disruption radius slider — scales the smoothstep outer edge in world units.
-disruptRadiusSlider.addEventListener("input", () => {
-  const r = parseInt(disruptRadiusSlider.value, 10);
-  disruptRadiusVal.textContent = r;
-  viz.setCursorRadius(r);
-});
-
 
 spotifyDisconnect.addEventListener("click", (e) => {
   e.stopPropagation();
@@ -1332,27 +1308,7 @@ if (IS_PHONE) {
     applyShape("heart", false);
   });
 
-  // Disrupt — toggle mode, then touch the canvas to push particles.
-  const mobileDisruptBtn = document.getElementById("mobile-disrupt-btn");
-  mobileDisruptBtn.addEventListener("click", () => {
-    _cursorDisruptActive = !_cursorDisruptActive;
-    mobileDisruptBtn.classList.toggle("active", _cursorDisruptActive);
-    if (!_cursorDisruptActive) viz.setCursorDisrupt(null, false);
-  });
 
-  // Touch events on canvas drive the disrupt world position.
-  function handleTouchDisrupt(e) {
-    if (!_cursorDisruptActive) return;
-    e.preventDefault();
-    const t = e.touches[0];
-    if (!t) return;
-    const world = viz.screenToWorld(t.clientX, t.clientY);
-    viz.setCursorDisrupt(world, true);
-  }
-  canvas.addEventListener("touchstart",  handleTouchDisrupt, { passive: false });
-  canvas.addEventListener("touchmove",   handleTouchDisrupt, { passive: false });
-  canvas.addEventListener("touchend",    () => { if (_cursorDisruptActive) viz.setCursorDisrupt(null, false); }, { passive: true });
-  canvas.addEventListener("touchcancel", () => { if (_cursorDisruptActive) viz.setCursorDisrupt(null, false); }, { passive: true });
 }
 
 refreshUi();

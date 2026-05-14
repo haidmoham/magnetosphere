@@ -82,9 +82,6 @@ const vertexShader = /* glsl */ `
   uniform vec3  uAttrPos3;
   uniform float uAttrCount;  // active well count (0–4)
   uniform float uAttrStr;    // global pull strength
-  uniform vec3  uCursorPos;      // world-space cursor intersection
-  uniform float uCursorStrength; // 0 = off, 1 = on
-  uniform float uCursorRadius;   // smoothstep outer edge (world units)
   attribute float aSize;
   attribute float aLayer;        // 0 = inner shell, 1 = outer shell
   attribute vec3 aSeed;
@@ -162,15 +159,6 @@ const vertexShader = /* glsl */ `
     if (uAttrCount > 2.5) pos += attrPull(uAttrPos2, pos);
     if (uAttrCount > 3.5) pos += attrPull(uAttrPos3, pos);
 
-    // Cursor gravity well — attracts particles toward the cursor world position
-    if (uCursorStrength > 0.0) {
-      vec3 toCursor = uCursorPos - pos;
-      float d = length(toCursor);
-      float force = uCursorStrength * 80.0 / (d * 0.02 + 1.0);
-      force *= smoothstep(uCursorRadius, 0.0, d);  // full pull at centre, zero at edge
-      force = min(force, d * 0.88);                // don't overshoot cursor
-      pos += (toCursor / max(d, 0.5)) * force;
-    }
 
     // Scatter — each particle flies to its own random chaos position, then reforms
     vec3 scatterTarget = aSeed * 50.0;
@@ -679,9 +667,6 @@ export class Visualizer {
         uAttrPos3:  { value: new THREE.Vector3(  0,  0,-55) },
         uAttrCount: { value: 2 },
         uAttrStr:   { value: 7.5 },
-        uCursorPos:      { value: new THREE.Vector3(0, 0, 0) },
-        uCursorStrength: { value: 0 },
-        uCursorRadius:   { value: 60.0 },
       },
       vertexShader,
       fragmentShader,
@@ -892,52 +877,6 @@ export class Visualizer {
   get zoomDefault() { return this._zoomDefault; }
   get zoomTarget()  { return this._zoomTarget; }
 
-  // ── Cursor disruption ────────────────────────────────────────────────────
-
-  /** Convert canvas screen coords → world-space point on the front surface of
-   *  the particle cloud (origin-centered sphere, radius ≈ cloud outer edge).
-   *  This gives a depth-correct hit point so cursor disruption is centred on
-   *  the visible particles rather than on the flat z=0 cross-section.
-   *  Falls back to the camera-view-plane at origin when the cursor is outside
-   *  the sphere (e.g. dragging over empty space). */
-  screenToWorld(screenX, screenY) {
-    const ndcX = (screenX / this.renderer.domElement.clientWidth)  * 2 - 1;
-    const ndcY = -(screenY / this.renderer.domElement.clientHeight) * 2 + 1;
-    const dir = new THREE.Vector3(ndcX, ndcY, 0.5)
-      .unproject(this.camera)
-      .sub(this.camera.position)
-      .normalize();
-    const p = this.camera.position;
-
-    // Ray–sphere intersection: |p + t*dir|² = R²
-    // t² + 2(p·dir)t + (|p|²−R²) = 0
-    const R    = 70;                        // approx. breathed cloud radius
-    const b    = p.dot(dir);
-    const disc = b * b - (p.lengthSq() - R * R);
-    if (disc >= 0) {
-      const t = -b - Math.sqrt(disc);       // front (smaller) intersection
-      if (t > 0) return p.clone().addScaledVector(dir, t);
-    }
-
-    // Cursor is outside the cloud — fall back to view-plane at origin
-    const camDir = new THREE.Vector3();
-    this.camera.getWorldDirection(camDir);
-    const denom = camDir.dot(dir);
-    if (Math.abs(denom) < 1e-6) return null;
-    return p.clone().addScaledVector(dir, -camDir.dot(p) / denom);
-  }
-
-  /** Enable / disable cursor disruption. Pass worldPos from screenToWorld(). */
-  setCursorDisrupt(worldPos, active) {
-    const u = this.particles.material.uniforms;
-    u.uCursorStrength.value = active ? 1.0 : 0.0;
-    if (active && worldPos) u.uCursorPos.value.copy(worldPos);
-  }
-
-  /** Set the disruption radius (world units). Range ~15–200. */
-  setCursorRadius(r) {
-    this.particles.material.uniforms.uCursorRadius.value = r;
-  }
 
   // Live-tuning hook for the debug panel.
   //   uX → shader uniform on the particle material

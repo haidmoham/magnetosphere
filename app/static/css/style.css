@@ -1134,7 +1134,7 @@ body::after {
   text-shadow: 0 0 5px rgba(0, 240, 255, 0.5);
 }
 
-/* ─── lower-left column: zoom row + cursor disrupt toggle ───── */
+/* ─── lower-left column: zoom row ───── */
 #lower-left {
   position: fixed;
   top: 88px;
@@ -1778,101 +1778,6 @@ body.ui-hidden #spotify-tooltip {
   box-shadow: 0 0 14px rgba(0, 240, 255, 0.2);
 }
 
-/* Wrapper keeps the button + radius slider in one column unit */
-#disrupt-controls {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-}
-
-/* Radius slider row — compact, aligned with button width */
-#disrupt-radius-row {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 0 2px;
-}
-#disrupt-radius-label {
-  font-family: "Orbitron", monospace;
-  font-size: 8px;
-  font-weight: 700;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: rgba(246, 214, 255, 0.35);
-  white-space: nowrap;
-  user-select: none;
-}
-#disrupt-radius-val {
-  font-family: "Share Tech Mono", monospace;
-  font-size: 9px;
-  color: rgba(0, 240, 255, 0.5);
-  min-width: 24px;
-  text-align: right;
-}
-#disrupt-radius-slider {
-  -webkit-appearance: none;
-  appearance: none;
-  flex: 1;
-  height: 2px;
-  background: rgba(0, 240, 255, 0.15);
-  border-radius: 1px;
-  outline: none;
-  cursor: pointer;
-}
-#disrupt-radius-slider::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: rgba(0, 240, 255, 0.7);
-  box-shadow: 0 0 6px rgba(0, 240, 255, 0.5);
-  cursor: pointer;
-}
-#disrupt-radius-slider::-moz-range-thumb {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  border: none;
-  background: rgba(0, 240, 255, 0.7);
-  box-shadow: 0 0 6px rgba(0, 240, 255, 0.5);
-  cursor: pointer;
-}
-
-/* Cursor disruption toggle — same glass card language as #ui-hide-btn. */
-#cursor-disrupt-btn {
-  appearance: none;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  background: rgba(10, 0, 30, 0.7);
-  border: 1px solid rgba(0, 240, 255, 0.18);
-  border-radius: 4px;
-  color: rgba(246, 214, 255, 0.45);
-  font-family: "Orbitron", monospace;
-  font-weight: 700;
-  font-size: 9px;
-  letter-spacing: 0.22em;
-  text-transform: uppercase;
-  padding: 6px 10px;
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
-  box-shadow: 0 0 18px rgba(0, 240, 255, 0.04);
-  transition: color 160ms ease, border-color 160ms ease,
-              box-shadow 160ms ease, background 160ms ease;
-}
-#cursor-disrupt-btn:hover {
-  color: var(--neon-cyan);
-  border-color: rgba(0, 240, 255, 0.45);
-  box-shadow: 0 0 14px rgba(0, 240, 255, 0.2);
-}
-/* Active state: glows cyan to signal disruption is on */
-#cursor-disrupt-btn.active {
-  color: var(--neon-cyan);
-  border-color: rgba(0, 240, 255, 0.65);
-  background: rgba(0, 240, 255, 0.1);
-  box-shadow: 0 0 12px rgba(0, 240, 255, 0.35), 0 0 24px rgba(0, 240, 255, 0.12);
-  text-shadow: 0 0 8px rgba(0, 240, 255, 0.7);
-}
 
 /* In hidden mode the button is the sole CTA — make it pulse so it's obvious. */
 body.ui-hidden #ui-hide-btn {
@@ -2237,25 +2142,6 @@ body.ui-hidden #ui-hide-btn {
 }
 #mobile-reset-btn:active { color: rgba(246, 214, 255, 0.7); }
 
-#mobile-disrupt-btn {
-  appearance: none;
-  background: transparent;
-  border: none;
-  color: rgba(0, 240, 255, 0.35);
-  font-family: "Orbitron", monospace;
-  font-weight: 700;
-  font-size: 9px;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  cursor: pointer;
-  padding: 4px 0;
-  transition: color 140ms ease;
-}
-#mobile-disrupt-btn:active { color: rgba(0, 240, 255, 0.7); }
-#mobile-disrupt-btn.active {
-  color: var(--neon-cyan);
-  text-shadow: 0 0 8px rgba(0, 240, 255, 0.6);
-}
 
 .mobile-zoom-group {
   display: flex;
