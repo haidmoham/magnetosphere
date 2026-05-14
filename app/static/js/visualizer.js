@@ -890,8 +890,12 @@ export class Visualizer {
 
   // ── Cursor disruption ────────────────────────────────────────────────────
 
-  /** Convert canvas screen coords → world-space point on the plane through
-   *  the cloud centre (perpendicular to the camera view direction). */
+  /** Convert canvas screen coords → world-space point on the front surface of
+   *  the particle cloud (origin-centered sphere, radius ≈ cloud outer edge).
+   *  This gives a depth-correct hit point so cursor disruption is centred on
+   *  the visible particles rather than on the flat z=0 cross-section.
+   *  Falls back to the camera-view-plane at origin when the cursor is outside
+   *  the sphere (e.g. dragging over empty space). */
   screenToWorld(screenX, screenY) {
     const ndcX = (screenX / this.renderer.domElement.clientWidth)  * 2 - 1;
     const ndcY = -(screenY / this.renderer.domElement.clientHeight) * 2 + 1;
@@ -899,13 +903,24 @@ export class Visualizer {
       .unproject(this.camera)
       .sub(this.camera.position)
       .normalize();
-    // Intersect with the plane at origin perpendicular to the camera's view dir
+    const p = this.camera.position;
+
+    // Ray–sphere intersection: |p + t*dir|² = R²
+    // t² + 2(p·dir)t + (|p|²−R²) = 0
+    const R    = 70;                        // approx. breathed cloud radius
+    const b    = p.dot(dir);
+    const disc = b * b - (p.lengthSq() - R * R);
+    if (disc >= 0) {
+      const t = -b - Math.sqrt(disc);       // front (smaller) intersection
+      if (t > 0) return p.clone().addScaledVector(dir, t);
+    }
+
+    // Cursor is outside the cloud — fall back to view-plane at origin
     const camDir = new THREE.Vector3();
     this.camera.getWorldDirection(camDir);
     const denom = camDir.dot(dir);
     if (Math.abs(denom) < 1e-6) return null;
-    const t = -camDir.dot(this.camera.position) / denom;
-    return this.camera.position.clone().addScaledVector(dir, t);
+    return p.clone().addScaledVector(dir, -camDir.dot(p) / denom);
   }
 
   /** Enable / disable cursor disruption. Pass worldPos from screenToWorld(). */
