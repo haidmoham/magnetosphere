@@ -1506,37 +1506,13 @@ body::after {
   /* Hide fixed desktop controls that collide with the scrollable panel */
   #lower-left { display: none !important; }
 
-  /* #mobile-hide-btn lives inside #mobile-panel actions row on mobile;
-     kill the old standalone fixed version */
-  .is-phone #mobile-hide-btn {
-    position: static;
-    transform: none;
-    width: auto;
-    height: auto;
-    bottom: auto;
-    left: auto;
-    background: transparent;
-    border: none;
-    box-shadow: none;
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
-    font-size: 9px;
-    padding: 4px 0;
-    color: rgba(246, 214, 255, 0.35);
-    letter-spacing: 0.18em;
-  }
-  .is-phone #mobile-hide-btn:active {
-    color: rgba(246, 214, 255, 0.7);
-    box-shadow: none;
-  }
-
   #sample-panel {
     display: flex;
     flex-direction: column;
     gap: 10px;
     width: 100%;
-    /* Push below fixed nameplate — header is ~20px top + ~70px height */
-    padding: 90px 0 8px;
+    /* Push below fixed nameplate (thin row bar ~32px at top:12px) */
+    padding: 52px 0 8px;
   }
 
   /* Compact suggestion art — fixed height instead of full square */
@@ -1971,16 +1947,37 @@ body.ui-hidden #ui-hide-btn {
   width: 200px;
 }
 
-/* Nameplate — pulled out of #hud flow and centered at the top */
+/* Nameplate — wider thin bar pinned to the top on phone */
 .is-phone #header-card {
   position: fixed;
-  top: 20px;
+  top: 12px;
   left: 50%;
   transform: translateX(-50%);
-  text-align: center;
+  width: calc(100vw - 32px);
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 14px;
+  gap: 12px;
 }
 
-/* Hide UI button — centered below nameplate, always visible on phone */
+.is-phone #title {
+  font-size: 12px;
+  letter-spacing: 0.35em;
+  white-space: nowrap;
+}
+
+.is-phone #credit {
+  font-size: 8px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.is-phone #build-stamp {
+  display: none;
+}
+
+/* Hide UI button — small text-only; sits between status bar and mic button */
 #mobile-hide-btn {
   display: none;
 }
@@ -1989,35 +1986,27 @@ body.ui-hidden #ui-hide-btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
   position: fixed;
-  bottom: 220px;
+  bottom: calc(88px + env(safe-area-inset-bottom, 0px));
   left: 50%;
   transform: translateX(-50%);
-  width: 160px;
-  height: 32px;
+  z-index: 20;
   appearance: none;
-  background: rgba(10, 0, 30, 0.75);
-  border: 1px solid rgba(0, 240, 255, 0.3);
-  border-radius: 4px;
-  color: rgba(0, 240, 255, 0.65);
+  background: transparent;
+  border: none;
+  color: rgba(0, 240, 255, 0.28);
   font-family: "Orbitron", monospace;
   font-weight: 700;
-  font-size: 9px;
-  letter-spacing: 0.2em;
+  font-size: 8px;
+  letter-spacing: 0.22em;
   text-transform: uppercase;
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
   cursor: pointer;
-  z-index: 20;
-  box-shadow: 0 0 14px rgba(0, 240, 255, 0.08);
-  transition: color 140ms ease, border-color 140ms ease, box-shadow 140ms ease;
+  padding: 6px 20px;
+  transition: color 140ms ease;
 }
 
 .is-phone #mobile-hide-btn:active {
-  color: var(--neon-cyan);
-  border-color: rgba(0, 240, 255, 0.6);
-  box-shadow: 0 0 18px rgba(0, 240, 255, 0.2);
+  color: rgba(0, 240, 255, 0.65);
 }
 
 /* CTA — subtle dim text just above the mobile panel */
