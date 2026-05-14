@@ -211,22 +211,25 @@ const fragmentShader = /* glsl */ `
 `;
 
 export class Visualizer {
-  constructor(canvas, { particleCount = 60000, pixelRatioLimit = 2 } = {}) {
+  constructor(canvas, { particleCount = 60000, pixelRatioLimit = 2, streamMode = false } = {}) {
     PARTICLE_COUNT = particleCount;
     this._pixelRatioLimit = pixelRatioLimit;
+    this._streamMode = streamMode;
     this.canvas = canvas;
     this.renderer = new THREE.WebGLRenderer({
       canvas,
       antialias: false,
-      alpha: false,
+      alpha: streamMode,            // transparent canvas for OBS compositing
+      premultipliedAlpha: false,    // cleaner over arbitrary streamer backgrounds
       powerPreference: "high-performance",
     });
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, pixelRatioLimit));
     this.renderer.setSize(window.innerWidth, window.innerHeight, false);
-    this.renderer.setClearColor(COLOR_BG, 1);
+    this.renderer.setClearColor(COLOR_BG, streamMode ? 0 : 1);
 
     this.scene = new THREE.Scene();
-    this.scene.fog = new THREE.FogExp2(0x1a0330, 0.0055);
+    // Stream mode: no fog so particles don't fade into a coloured background
+    this.scene.fog = streamMode ? null : new THREE.FogExp2(0x1a0330, 0.0055);
 
     this.camera = new THREE.PerspectiveCamera(62, window.innerWidth / window.innerHeight, 0.1, 600);
     this.camera.position.set(0, 12, 135);
@@ -743,7 +746,7 @@ export class Visualizer {
 
     this.particles.material.uniforms.uColorInner.value.copy(this._cInner);
     this.particles.material.uniforms.uColorOuter.value.copy(this._cOuter);
-    this.scene.fog.color.copy(this._cFog);
+    if (this.scene.fog) this.scene.fog.color.copy(this._cFog);
   }
 
   // ── Resize ───────────────────────────────────────────────────────────────
