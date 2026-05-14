@@ -1504,15 +1504,45 @@ body::after {
 /* ─── sample panel — show inline on mobile ────────────────────── */
 @media (max-width: 900px) {
   /* Hide fixed desktop controls that collide with the scrollable panel */
-  #lower-left        { display: none !important; }
-  #mobile-hide-btn   { display: none !important; }
+  #lower-left { display: none !important; }
+
+  /* #mobile-hide-btn lives inside #mobile-panel actions row on mobile;
+     kill the old standalone fixed version */
+  .is-phone #mobile-hide-btn {
+    position: static;
+    transform: none;
+    width: auto;
+    height: auto;
+    bottom: auto;
+    left: auto;
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    font-size: 9px;
+    padding: 4px 0;
+    color: rgba(246, 214, 255, 0.35);
+    letter-spacing: 0.18em;
+  }
+  .is-phone #mobile-hide-btn:active {
+    color: rgba(246, 214, 255, 0.7);
+    box-shadow: none;
+  }
 
   #sample-panel {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 10px;
     width: 100%;
-    padding: 12px 0 4px;
+    /* Push below fixed nameplate — header is ~20px top + ~70px height */
+    padding: 90px 0 8px;
+  }
+
+  /* Compact suggestion art — fixed height instead of full square */
+  #md-suggestions .md-art {
+    height: 72px;
+    aspect-ratio: auto;
   }
 }
 
