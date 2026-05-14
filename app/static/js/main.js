@@ -3,6 +3,10 @@ import { Visualizer } from "./visualizer.js";
 import { SpotifyWatcher } from "./spotify.js";
 import { BeatTracker } from "./beat-tracker.js";
 
+// ── Stream mode (?stream=1) — transparent canvas, no UI, OBS browser source ──
+const STREAM_MODE = new URLSearchParams(location.search).has("stream");
+if (STREAM_MODE) document.body.classList.add("stream-mode");
+
 function detectPhone() {
   const coarse = window.matchMedia("(pointer: coarse)").matches;
   const touch  = navigator.maxTouchPoints > 1;
@@ -122,7 +126,10 @@ const zoomOutBtn  = document.getElementById("zoom-out-btn");
 const zoomValue   = document.getElementById("zoom-value");
 
 const audio   = new AudioEngine();
-const viz     = new Visualizer(canvas, IS_PHONE ? { particleCount: 15000, pixelRatioLimit: 1.5 } : {});
+const viz     = new Visualizer(canvas, {
+  ...(IS_PHONE ? { particleCount: 15000, pixelRatioLimit: 1.5 } : {}),
+  streamMode: STREAM_MODE,
+});
 const spotify = new SpotifyWatcher();
 const spotifyBtn = document.querySelector('.src-btn[data-src="spotify"]');
 
@@ -268,7 +275,7 @@ mdSearchInput.addEventListener("input", () => {
 // Load suggestions immediately on mobile — panel is always visible inline.
 if (isMobile) loadSuggestions();
 
-// Photosensitivity warning — shown once per browser session.
+// Photosensitivity warning — shown once per browser session (skipped in stream mode).
 const ewOverlay = document.getElementById("epilepsy-warning");
 const ewProceed = document.getElementById("ew-proceed");
 if (sessionStorage.getItem("voidpulse.ew.ack")) {
@@ -278,6 +285,34 @@ if (sessionStorage.getItem("voidpulse.ew.ack")) {
     sessionStorage.setItem("voidpulse.ew.ack", "1");
     ewOverlay.hidden = true;
   }, { once: true });
+}
+
+// Stream mode: clicking the canvas (or pressing M) activates the mic so the
+// streamer can go live without ever seeing the UI.  The hint overlay disappears
+// once the source is live.
+if (STREAM_MODE) {
+  const streamHint   = document.getElementById("stream-hint");
+  const streamCredit = document.getElementById("stream-credit");
+  let _streamMicDone = false;
+
+  // Fade the attribution credit out after 8 seconds.
+  setTimeout(() => streamCredit && streamCredit.classList.add("credit-fade"), 8000);
+
+  async function activateStreamMic() {
+    if (_streamMicDone) return;
+    _streamMicDone = true;
+    // Dismiss the hint (CSS transition fades it out).
+    if (streamHint) streamHint.classList.add("hint-dismissed");
+    try {
+      await audio.useMicrophone();
+      connectBeatTracker().catch(() => {});
+      refreshUi();
+    } catch { /* mic denied — visualizer still runs silently */ }
+  }
+  canvas.addEventListener("click", activateStreamMic, { once: true });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "m" || e.key === "M") activateStreamMic();
+  });
 }
 
 let errorTimer = 0;

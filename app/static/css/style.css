@@ -2174,3 +2174,84 @@ body.mobile-ui-hidden.is-phone #mobile-cta     { display: none !important; }
 body.mobile-ui-hidden.is-phone #source-picker  { display: none !important; }
 body.mobile-ui-hidden.is-phone #status-bar     { display: none !important; }
 body.mobile-ui-hidden.is-phone #sample-panel   { display: none !important; }
+
+/* ─── Stream mode (?stream=1) — OBS browser source overlay ──────────── */
+
+/* Transparent background so OBS composites the particle field over game/cam */
+body.stream-mode {
+  background: transparent !important;
+}
+
+/* Remove scanline overlay — it adds a faint tinted bar that looks bad over video */
+body.stream-mode::after {
+  display: none !important;
+}
+
+/* Hide all HUD chrome */
+body.stream-mode #hud,
+body.stream-mode #source-picker,
+body.stream-mode #epilepsy-warning,
+body.stream-mode #status-bar,
+body.stream-mode #sample-panel,
+body.stream-mode #error-toast,
+body.stream-mode #now-playing,
+body.stream-mode .cursor-trail,
+body.stream-mode #cursor,
+body.stream-mode #cursor-ring {
+  display: none !important;
+}
+
+/* Stream hint — "click to activate mic" — center-bottom, fades out on use */
+#stream-hint {
+  position: fixed;
+  bottom: 40px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.55);
+  border: 1px solid rgba(0, 240, 255, 0.35);
+  border-radius: 4px;
+  color: rgba(0, 240, 255, 0.85);
+  font-family: "Orbitron", monospace;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  padding: 8px 18px;
+  cursor: pointer !important;
+  transition: opacity 600ms ease;
+  z-index: 10;
+  /* Hidden outside stream mode */
+  display: none;
+}
+body.stream-mode #stream-hint {
+  display: block;
+}
+body.stream-mode #stream-hint.hint-dismissed {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Tiny attribution credit — top-right, very faint, fades after 8s */
+#stream-credit {
+  position: fixed;
+  top: 14px;
+  right: 16px;
+  font-family: "Orbitron", monospace;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: rgba(0, 240, 255, 0.22);
+  pointer-events: none;
+  z-index: 10;
+  opacity: 1;
+  transition: opacity 2s ease;
+  /* Hidden outside stream mode */
+  display: none;
+}
+body.stream-mode #stream-credit {
+  display: block;
+}
+body.stream-mode #stream-credit.credit-fade {
+  opacity: 0;
+}
