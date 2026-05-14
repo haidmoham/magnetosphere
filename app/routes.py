@@ -7,7 +7,8 @@ bp = Blueprint("main", __name__)
 def index():
     return render_template("index.html",
                            version=current_app.config["APP_VERSION"],
-                           asset_v=current_app.config["ASSET_VERSION"])
+                           asset_v=current_app.config["ASSET_VERSION"],
+                           build_sha=current_app.config["BUILD_SHA"])
 
 
 @bp.route("/health")
