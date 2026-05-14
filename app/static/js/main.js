@@ -30,6 +30,8 @@ const castBtn          = document.getElementById("cast-btn");
 const castTooltip      = document.getElementById("cast-tooltip");
 const helpBtn          = document.getElementById("help-btn");
 const helpTooltip      = document.getElementById("help-tooltip");
+const streamBtn        = document.getElementById("stream-btn");
+const streamTooltip    = document.getElementById("stream-tooltip");
 const spotifyTooltip   = document.getElementById("spotify-tooltip");
 const spotifyDisconnect = document.getElementById("spotify-disconnect");
 const npCard   = document.getElementById("now-playing");
@@ -1261,19 +1263,47 @@ spotifyDisconnect.addEventListener("click", (e) => {
 
 helpBtn.addEventListener("click", (e) => {
   e.stopPropagation();
-  helpTooltip.hidden  = !helpTooltip.hidden;
-  castTooltip.hidden  = true;
+  helpTooltip.hidden    = !helpTooltip.hidden;
+  castTooltip.hidden    = true;
+  streamTooltip.hidden  = true;
   spotifyTooltip.hidden = true;
 });
 castBtn.addEventListener("click", (e) => {
   e.stopPropagation();
-  castTooltip.hidden  = !castTooltip.hidden;
-  helpTooltip.hidden  = true;
+  castTooltip.hidden    = !castTooltip.hidden;
+  helpTooltip.hidden    = true;
+  streamTooltip.hidden  = true;
   spotifyTooltip.hidden = true;
 });
+
+// ── Stream button ────────────────────────────────────────────────────────
+{
+  const streamUrl     = `${location.origin}/?stream=1`;
+  const urlDisplay    = document.getElementById("stream-url-display");
+  const copyBtn       = document.getElementById("stream-copy-btn");
+  const openLink      = document.getElementById("stream-open-link");
+  if (urlDisplay) urlDisplay.textContent = streamUrl;
+  if (openLink)   openLink.href = streamUrl;
+  copyBtn && copyBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    navigator.clipboard.writeText(streamUrl).then(() => {
+      copyBtn.textContent = "copied!";
+      setTimeout(() => { copyBtn.textContent = "copy"; }, 2000);
+    }).catch(() => {});
+  });
+  streamBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    streamTooltip.hidden  = !streamTooltip.hidden;
+    helpTooltip.hidden    = true;
+    castTooltip.hidden    = true;
+    spotifyTooltip.hidden = true;
+  });
+}
+
 document.addEventListener("click", () => {
   castTooltip.hidden    = true;
   helpTooltip.hidden    = true;
+  streamTooltip.hidden  = true;
   spotifyTooltip.hidden = true;
 });
 

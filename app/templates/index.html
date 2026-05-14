@@ -459,6 +459,22 @@
         </div>
       </div>
     </div>
+
+    <button id="stream-btn" aria-label="Stream mode / OBS source">◈ stream</button>
+    <div id="stream-tooltip" hidden>
+      <div class="stream-obs-title">OBS Browser Source</div>
+      <div class="stream-url-row">
+        <code id="stream-url-display"></code>
+        <button id="stream-copy-btn">copy</button>
+      </div>
+      <ol class="stream-steps">
+        <li>OBS → Sources → <strong>+</strong> → Browser Source</li>
+        <li>Paste URL · set 1920 × 1080</li>
+        <li>Check ✅ <strong>Allow Transparency</strong></li>
+        <li>Click canvas or press <kbd>M</kbd> to activate mic</li>
+      </ol>
+      <a id="stream-open-link" href="" target="_blank" rel="noopener" class="stream-open-btn">open stream mode ↗</a>
+    </div>
   </div>
 
   <div id="cursor" aria-hidden="true">

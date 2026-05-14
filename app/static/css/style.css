@@ -1299,6 +1299,139 @@ body::after {
   line-height: 1.5;
 }
 
+/* ─── Stream button + tooltip ────────────────────────────────── */
+#stream-btn {
+  position: fixed;
+  bottom: 20px;
+  left: 162px;
+  cursor: pointer;
+  border: 1px solid rgba(255, 61, 240, 0.45);
+  border-radius: 2px;
+  background: rgba(10, 0, 30, 0.7);
+  color: var(--neon-pink);
+  font-family: "Orbitron", monospace;
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  text-shadow: 0 0 6px rgba(255, 61, 240, 0.7);
+  padding: 6px 12px;
+  backdrop-filter: blur(6px);
+  transition: background 140ms ease, box-shadow 140ms ease;
+}
+#stream-btn:hover {
+  background: rgba(255, 61, 240, 0.1);
+  box-shadow: 0 0 16px rgba(255, 61, 240, 0.4);
+}
+
+#stream-tooltip {
+  position: fixed;
+  bottom: 56px;
+  left: 162px;
+  width: 310px;
+  background: rgba(8, 0, 26, 0.94);
+  border: 1px solid rgba(255, 61, 240, 0.4);
+  border-radius: 4px;
+  padding: 14px 16px;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 0 28px rgba(255, 61, 240, 0.18);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  z-index: 20;
+}
+
+.stream-obs-title {
+  font-family: "Orbitron", monospace;
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--neon-pink);
+  text-shadow: 0 0 8px rgba(255, 61, 240, 0.6);
+}
+
+.stream-url-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 61, 240, 0.07);
+  border: 1px solid rgba(255, 61, 240, 0.25);
+  border-radius: 3px;
+  padding: 6px 10px;
+}
+
+#stream-url-display {
+  flex: 1;
+  font-family: "Share Tech Mono", monospace;
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  color: var(--text-soft);
+  word-break: break-all;
+  line-height: 1.4;
+}
+
+#stream-copy-btn {
+  flex-shrink: 0;
+  appearance: none;
+  background: rgba(255, 61, 240, 0.15);
+  border: 1px solid rgba(255, 61, 240, 0.4);
+  border-radius: 2px;
+  color: var(--neon-pink);
+  font-family: "Orbitron", monospace;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  padding: 4px 8px;
+  cursor: pointer;
+  transition: background 120ms ease;
+}
+#stream-copy-btn:hover {
+  background: rgba(255, 61, 240, 0.28);
+}
+
+.stream-steps {
+  font-family: "Share Tech Mono", monospace;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--text-dim);
+  line-height: 1.6;
+  padding-left: 16px;
+  margin: 0;
+}
+.stream-steps li { margin-bottom: 2px; }
+.stream-steps strong { color: var(--text-soft); }
+.stream-steps kbd {
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 2px;
+  padding: 0 4px;
+  font-family: inherit;
+  font-size: 10px;
+}
+
+.stream-open-btn {
+  display: block;
+  text-align: center;
+  font-family: "Orbitron", monospace;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--neon-pink);
+  text-shadow: 0 0 8px rgba(255, 61, 240, 0.5);
+  text-decoration: none;
+  padding: 7px 0;
+  border: 1px solid rgba(255, 61, 240, 0.35);
+  border-radius: 3px;
+  transition: background 130ms ease, box-shadow 130ms ease;
+}
+.stream-open-btn:hover {
+  background: rgba(255, 61, 240, 0.1);
+  box-shadow: 0 0 14px rgba(255, 61, 240, 0.3);
+}
+
 /* ─── sample search panel (inline, mobile only) ──────────────── */
 #sample-panel {
   display: none; /* hidden on desktop */
@@ -1612,6 +1745,8 @@ body.ui-hidden #help-btn,
 body.ui-hidden #help-tooltip,
 body.ui-hidden #cast-btn,
 body.ui-hidden #cast-tooltip,
+body.ui-hidden #stream-btn,
+body.ui-hidden #stream-tooltip,
 body.ui-hidden #spotify-tooltip {
   display: none !important;
 }
@@ -1927,6 +2062,8 @@ body.ui-hidden #ui-hide-btn {
 .is-phone #help-tooltip      { display: none !important; }
 .is-phone #cast-btn          { display: none !important; }
 .is-phone #cast-tooltip      { display: none !important; }
+.is-phone #stream-btn        { display: none !important; }
+.is-phone #stream-tooltip    { display: none !important; }
 .is-phone #mobile-notice     { display: none !important; }
 .is-phone #now-playing       { display: none !important; }
 .is-phone #spotify-tooltip   { display: none !important; }
@@ -2195,6 +2332,8 @@ body.stream-mode #status-bar,
 body.stream-mode #sample-panel,
 body.stream-mode #error-toast,
 body.stream-mode #now-playing,
+body.stream-mode #stream-btn,
+body.stream-mode #stream-tooltip,
 body.stream-mode .cursor-trail,
 body.stream-mode #cursor,
 body.stream-mode #cursor-ring {
