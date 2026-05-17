@@ -3,6 +3,7 @@ import { EffectComposer }  from "three/addons/postprocessing/EffectComposer.js";
 import { RenderPass }      from "three/addons/postprocessing/RenderPass.js";
 import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
 import { OutputPass }      from "three/addons/postprocessing/OutputPass.js";
+import { OrbitControls }   from "three/addons/controls/OrbitControls.js";
 
 let PARTICLE_COUNT = 60000;
 const COLOR_BG     = 0x08001a;
@@ -294,6 +295,18 @@ export class Visualizer {
     this._buildParticles();
     this._buildComposer();
     this.clock = new THREE.Clock();
+
+    // OrbitControls — left-drag to orbit in 3D, scroll to zoom.
+    // Disabled during cinematic mode (lerp takes over).
+    this.controls = new OrbitControls(this.camera, this.renderer.domElement);
+    this.controls.target.set(0, -6, 0);
+    this.controls.enableDamping  = true;
+    this.controls.dampingFactor  = 0.06;
+    this.controls.rotateSpeed    = 0.45;
+    this.controls.enableZoom     = false;   // zoom buttons handle distance
+    this.controls.enablePan      = false;   // keep cloud centred
+    this.controls.minPolarAngle  = 0.15;    // ~9° — don't flip fully overhead
+    this.controls.maxPolarAngle  = Math.PI - 0.15;
 
     window.addEventListener("resize", () => this._onResize());
   }
@@ -811,27 +824,37 @@ export class Visualizer {
     this.grid.position.z =
       (this.grid.position.z + dt * (this.fScroll + bands.bass * this.fScrollBass)) % this._gridRowSpacing;
 
-    // Camera: lerp position + lookAt toward target each frame. In cinematic
-    // mode, the target rotates between named scenes every _sceneInterval
-    // seconds; otherwise the target is the live front view with the zoom
-    // slider driving Z.
+    // Camera: cinematic mode lerps between named scenes; otherwise OrbitControls
+    // lets the user drag to any angle. Zoom buttons adjust distance from target.
     if (this._cinematic) {
+      this.controls.enabled = false;
       if (t - this._sceneT0 > this._sceneInterval) {
         this._sceneT0       = t;
         this._sceneInterval = 12 + Math.random() * 8;   // 12–20s between cuts
         this._cycleScene();
       }
+      this._camPos.lerp(this._camPosTarget,  0.035);
+      this._camLook.lerp(this._camLookTarget, 0.035);
+      this.camera.position.copy(this._camPos);
+      this.camera.position.y += Math.cos(t * 0.06) * 2.5;  // gentle bob
+      this.camera.lookAt(this._camLook);
     } else {
+      // Zoom: smoothly adjust distance from target along the current view axis.
       this._zoomCurrent += (this._zoomTarget - this._zoomCurrent) * 0.06;
-      this._camPosTarget.set(0, 12, this._zoomCurrent);
-      this._camLookTarget.set(0, -6, 0);
+      const dir = this.camera.position.clone().sub(this.controls.target);
+      const curDist = dir.length();
+      if (Math.abs(curDist - this._zoomCurrent) > 0.1) {
+        this.camera.position.copy(
+          dir.normalize().multiplyScalar(this._zoomCurrent).add(this.controls.target)
+        );
+      }
+      if (!this.controls.enabled) {
+        // Re-entering non-cinematic: sync controls to current camera state.
+        this.controls.update();
+        this.controls.enabled = true;
+      }
+      this.controls.update();
     }
-
-    this._camPos.lerp(this._camPosTarget,  0.035);
-    this._camLook.lerp(this._camLookTarget, 0.035);
-    this.camera.position.copy(this._camPos);
-    this.camera.position.y += Math.cos(t * 0.06) * 2.5;  // gentle bob
-    this.camera.lookAt(this._camLook);
 
     this.composer.render();
   }
@@ -844,6 +867,12 @@ export class Visualizer {
     if (this._cinematic && this.clock) {
       this._sceneT0       = this.clock.getElapsedTime();
       this._sceneInterval = 12 + Math.random() * 8;
+      this.controls.enabled = false;
+    } else {
+      // Hand camera back to OrbitControls from wherever cinematic left it.
+      this.controls.target.set(0, -6, 0);
+      this.controls.update();
+      this.controls.enabled = true;
     }
   }
   get cinematic() { return this._cinematic; }
